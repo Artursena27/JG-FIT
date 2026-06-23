@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JG-FIT — 5 logins (logo transparente)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0A1A33;--navy-deep:#06101f;--navy-soft:#0e2342;--navy-card:#0f2549;
+    --lime:#C6F032;--lime-dark:#b2db2a;--white:#fff;--muted:#9fb0c9;--muted-soft:#6f819c;
+    --border:rgba(255,255,255,.10);
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Poppins',system-ui,sans-serif;background:var(--navy-deep);color:var(--white);-webkit-font-smoothing:antialiased}
+
+  .tabbar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+    background:#050d18;border-bottom:1px solid var(--border);padding:10px 14px}
+  .tabbar .brand{font-weight:800;letter-spacing:.04em;margin-right:10px;font-size:14px}
+  .tabbar .brand b{color:var(--lime)}
+  .tab{appearance:none;border:1px solid var(--border);background:transparent;color:var(--muted);
+    font-family:inherit;font-size:12px;font-weight:600;padding:8px 14px;border-radius:999px;cursor:pointer;transition:.2s}
+  .tab:hover{color:var(--white);border-color:var(--muted-soft)}
+  .tab.active{background:var(--lime);color:var(--navy);border-color:var(--lime)}
+  .hint{margin-left:auto;font-size:11px;color:var(--muted-soft)}
+
+  .screen{display:none;min-height:calc(100vh - 53px)}
+  .screen.active{display:block}
+  .caption{text-align:center;font-size:12px;color:var(--muted-soft);padding:10px;
+    background:#050d18;border-top:1px solid var(--border)}
+  .caption b{color:var(--lime)}
+
+  .field{margin-bottom:14px;text-align:left}
+  .field label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:7px}
+  .field input{width:100%;padding:14px 16px;border-radius:10px;border:1px solid var(--border);
+    background:rgba(255,255,255,.04);color:var(--white);font-family:inherit;font-size:14px;transition:.2s}
+  .field input::placeholder{color:var(--muted-soft)}
+  .field input:focus{outline:none;border-color:var(--lime);background:rgba(198,240,50,.06)}
+  .btn-primary{width:100%;padding:15px;border:none;border-radius:10px;cursor:pointer;background:var(--lime);
+    color:var(--navy);font-family:inherit;font-weight:800;font-size:13px;letter-spacing:.08em;text-transform:uppercase;transition:.2s}
+  .btn-primary:hover{background:var(--lime-dark);transform:translateY(-1px);box-shadow:0 10px 30px rgba(198,240,50,.25)}
+  .link{display:inline-block;margin-top:14px;color:var(--muted);font-size:13px;text-decoration:none;cursor:pointer;transition:.2s}
+  .link:hover{color:var(--lime)}
+  .eyebrow{font-size:11px;font-weight:600;letter-spacing:.45em;text-transform:uppercase;color:var(--lime)}
+  .lockup{display:flex;align-items:center;gap:11px}
+  .lockup img{width:42px;height:42px;object-fit:contain}
+  .lockup .nm{font-weight:800;line-height:1;font-size:18px;letter-spacing:.02em}
+  .lockup .sub{font-size:9px;letter-spacing:.32em;color:var(--lime);text-transform:uppercase;margin-top:3px}
+
+  /* ===== 6 · LOGO GIGANTE (G protagonista) ===== */
+  .v6{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:48px 20px;background:radial-gradient(circle at 50% 30%,var(--navy-soft),var(--navy-deep) 70%)}
+  .v6 .bigG{width:min(180px,40vw);object-fit:contain;filter:drop-shadow(0 16px 50px rgba(198,240,50,.35));margin-bottom:8px}
+  .v6 h1{font-size:40px;font-weight:900;letter-spacing:-.01em;margin-top:6px}
+  .v6 h1 b{color:var(--lime)}
+  .v6 .s{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--muted);margin-bottom:30px}
+  .v6 .box{width:100%;max-width:350px}
+
+  /* ===== 7 · LIME DOMINANT (marca como protagonista) ===== */
+  .v7{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:40px 20px;background:var(--lime)}
+  .v7 .wmDark{position:absolute;width:95vmin;left:-15vmin;bottom:-20vmin;object-fit:contain;filter:brightness(0);opacity:.07;pointer-events:none}
+  .v7-card{position:relative;z-index:2;width:100%;max-width:370px;background:var(--navy);border-radius:22px;
+    padding:38px 30px;text-align:center;box-shadow:0 30px 70px rgba(10,26,51,.35)}
+  .v7-card img.g{width:78px;object-fit:contain;margin-bottom:16px;filter:drop-shadow(0 8px 22px rgba(198,240,50,.3))}
+  .v7-card h1{font-size:28px;font-weight:900;margin-bottom:4px}
+  .v7-card h1 b{color:var(--lime)}
+  .v7-card .s{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--muted);margin-bottom:26px}
+
+  /* ===== 8 · DIAGONAL CUT (esportivo/dinâmico) ===== */
+  .v8{position:relative;display:grid;grid-template-columns:1fr 1fr;min-height:inherit;background:var(--navy)}
+  .v8-left{position:relative;background:var(--lime);clip-path:polygon(0 0,100% 0,72% 100%,0 100%);
+    display:flex;flex-direction:column;justify-content:center;padding:48px 56px 48px 48px;overflow:hidden}
+  .v8-left img.g{width:96px;object-fit:contain;filter:brightness(0);margin-bottom:22px}
+  .v8-left .nm{color:var(--navy);font-weight:900;font-size:30px;line-height:1.05}
+  .v8-left .sub{color:var(--navy);opacity:.7;font-size:11px;letter-spacing:.3em;text-transform:uppercase;margin-top:8px;font-weight:600}
+  .v8-right{display:flex;align-items:center;justify-content:center;padding:40px}
+  .v8-right .inner{width:100%;max-width:330px}
+  .v8-right h1{font-size:26px;font-weight:800;margin-bottom:6px}
+  .v8-right .s{color:var(--muted);font-size:13px;margin-bottom:24px}
+  @media(max-width:820px){.v8{grid-template-columns:1fr}.v8-left{clip-path:polygon(0 0,100% 0,100% 82%,0 100%);padding:32px;min-height:240px}}
+
+  /* ===== 9 · G WATERMARK FULLSCREEN ===== */
+  .v9{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:40px 20px;background:var(--navy-deep)}
+  .v9 .wm{position:absolute;width:130vmin;left:50%;top:50%;transform:translate(-50%,-50%);object-fit:contain;opacity:.06;pointer-events:none}
+  .v9 .glow{position:absolute;width:600px;height:340px;left:50%;top:42%;transform:translate(-50%,-50%);
+    background:radial-gradient(ellipse,rgba(198,240,50,.12),transparent 70%);pointer-events:none}
+  .v9-card{position:relative;z-index:2;width:100%;max-width:360px;text-align:center}
+  .v9-card img.g{width:64px;object-fit:contain;margin-bottom:18px;filter:drop-shadow(0 8px 22px rgba(198,240,50,.35))}
+  .v9-card .eyebrow{margin-bottom:6px}
+  .v9-card h1{font-size:30px;font-weight:900;margin-bottom:4px}
+  .v9-card h1 b{color:var(--lime)}
+  .v9-card .s{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--muted);margin-bottom:26px}
+
+  /* ===== 10 · MONO EDITORIAL (minimalista premium) ===== */
+  .v10{position:relative;overflow:hidden;min-height:inherit;background:var(--navy);
+    display:flex;align-items:center;padding:clamp(28px,6vw,90px)}
+  .v10 .corner{position:absolute;top:28px;left:clamp(28px,6vw,90px)}
+  .v10 .gBR{position:absolute;right:-6vmin;bottom:-8vmin;width:46vmin;object-fit:contain;opacity:.10;pointer-events:none}
+  .v10 .content{position:relative;z-index:2;width:100%;max-width:380px}
+  .v10 h1{font-size:clamp(40px,7vw,60px);font-weight:900;line-height:.95;letter-spacing:-.02em;margin-bottom:10px}
+  .v10 h1 b{color:var(--lime)}
+  .v10 .s{color:var(--muted);font-size:14px;margin-bottom:30px;max-width:300px}
+  .v10 .row{display:flex;gap:12px;align-items:center;margin-top:18px}
+  .v10 .row .link{margin-top:0}
+
+  @media(max-width:820px){.v6 h1{font-size:32px}}
+</style>
+</head>
+<body>
+
+<div class="tabbar">
+  <div class="brand">JG<b>-FIT</b> · logins · logo transparente</div>
+  <button class="tab active" data-s="t6">6 · Logo Gigante</button>
+  <button class="tab" data-s="t7">7 · Lime Dominant</button>
+  <button class="tab" data-s="t8">8 · Diagonal</button>
+  <button class="tab" data-s="t9">9 · G Watermark</button>
+  <button class="tab" data-s="t10">10 · Mono Editorial</button>
+  <span class="hint">novas 5 — o "G" como protagonista</span>
+</div>
+
+<!-- 6 · LOGO GIGANTE -->
+<section class="screen active" id="t6">
+  <div class="v6">
+    <img class="bigG" src="logo-g.png" alt="JG">
+    <h1>JG<b>-FIT</b></h1>
+    <div class="s">João Guilherme · Personal</div>
+    <div class="box">
+      <div class="field"><label>E-mail</label><input type="email" placeholder="seu@email.com"></div>
+      <div class="field"><label>Senha</label><input type="password" placeholder="••••••••"></div>
+      <button class="btn-primary">Entrar</button>
+      <div style="text-align:center"><a class="link">Esqueci minha senha</a></div>
+    </div>
+  </div>
+  <div class="caption">O <b>"G" gigante</b> é o herói da tela. Logo-forward, marcante e direto.</div>
+</section>
+
+<!-- 7 · LIME DOMINANT -->
+<section class="screen" id="t7">
+  <div class="v7">
+    <img class="wmDark" src="logo-g.png" alt="">
+    <div class="v7-card">
+      <img class="g" src="logo-g.png" alt="JG">
+      <h1>Bem-vindo</h1>
+      <div class="s">Área do Aluno</div>
+      <div class="field"><label>E-mail</label><input type="email" placeholder="seu@email.com"></div>
+      <div class="field"><label>Senha</label><input type="password" placeholder="••••••••"></div>
+      <button class="btn-primary">Entrar</button>
+      <br><a class="link">Esqueci minha senha</a>
+    </div>
+  </div>
+  <div class="caption">A cor da marca (<b>lime</b>) domina o fundo + card navy. Energia máxima, bem "fitness".</div>
+</section>
+
+<!-- 8 · DIAGONAL CUT -->
+<section class="screen" id="t8">
+  <div class="v8">
+    <div class="v8-left">
+      <img class="g" src="logo-g.png" alt="JG">
+      <div class="nm">JOÃO<br>GUILHERME</div>
+      <div class="sub">Personal Trainer</div>
+    </div>
+    <div class="v8-right">
+      <div class="inner">
+        <h1>Entrar</h1>
+        <p class="s">Bora pro treino de hoje.</p>
+        <div class="field"><label>E-mail</label><input type="email" placeholder="seu@email.com"></div>
+        <div class="field"><label>Senha</label><input type="password" placeholder="••••••••"></div>
+        <button class="btn-primary">Entrar</button>
+        <br><a class="link">Esqueci minha senha</a>
+      </div>
+    </div>
+  </div>
+  <div class="caption">Corte <b>diagonal</b> dinâmico (lime + navy) com o G em destaque. Vibe esportiva e moderna.</div>
+</section>
+
+<!-- 9 · G WATERMARK FULLSCREEN -->
+<section class="screen" id="t9">
+  <div class="v9">
+    <img class="wm" src="logo-g.png" alt="">
+    <div class="glow"></div>
+    <div class="v9-card">
+      <img class="g" src="logo-g.png" alt="JG">
+      <div class="eyebrow">João Guilherme</div>
+      <h1>JG<b>-FIT</b></h1>
+      <div class="s">Área do Aluno</div>
+      <div class="field"><label>E-mail</label><input type="email" placeholder="seu@email.com"></div>
+      <div class="field"><label>Senha</label><input type="password" placeholder="••••••••"></div>
+      <button class="btn-primary">Entrar</button>
+      <br><a class="link">Esqueci minha senha</a>
+    </div>
+  </div>
+  <div class="caption">Um <b>"G" enorme</b> de marca d'água preenchendo a tela + card central. Elegante e imersivo.</div>
+</section>
+
+<!-- 10 · MONO EDITORIAL -->
+<section class="screen" id="t10">
+  <div class="v10">
+    <div class="corner lockup">
+      <img src="logo-g.png" alt="JG">
+      <div><div class="nm">JOÃO GUILHERME</div><div class="sub">Personal Trainer</div></div>
+    </div>
+    <img class="gBR" src="logo-g.png" alt="">
+    <div class="content">
+      <h1>Bora<br><b>treinar.</b></h1>
+      <p class="s">Acesse sua área e veja o treino da semana.</p>
+      <div class="field"><label>E-mail</label><input type="email" placeholder="seu@email.com"></div>
+      <div class="field"><label>Senha</label><input type="password" placeholder="••••••••"></div>
+      <button class="btn-primary">Entrar</button>
+      <div class="row"><a class="link">Esqueci minha senha</a></div>
+    </div>
+  </div>
+  <div class="caption">Minimalista <b>editorial</b>: muito respiro, tipografia grande, o G discreto no canto. Premium.</div>
+</section>
+
+<script>
+  const tabs=document.querySelectorAll('.tab');
+  const screens=document.querySelectorAll('.screen');
+  tabs.forEach(t=>t.addEventListener('click',()=>{
+    tabs.forEach(x=>x.classList.remove('active'));
+    screens.forEach(s=>s.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.s).classList.add('active');
+    window.scrollTo({top:0});
+  }));
+</script>
+</body>
+</html>

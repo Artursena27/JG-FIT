@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Antigravity — 10 Telas de Login Premium</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy-deep: #020c1b;
+    --navy-card: #051329;
+    --navy-light: #0d2240;
+    --lime-primary: #c6ff00;
+    --lime-hover: #b5eb00;
+    --lime-shadow: rgba(198, 255, 0, 0.15);
+    --text-light: #ffffff;
+    --text-muted: #6482a6;
+    --border-color: rgba(13, 34, 64, 0.6);
+    --border-highlight: rgba(198, 255, 0, 0.3);
+    --radius-lg: 20px;
+    --font-primary: 'Poppins', sans-serif;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-primary);
+    background-color: var(--navy-deep);
+    color: var(--text-light);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Navigation Bar */
+  .nav-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(2, 12, 27, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(13, 34, 64, 0.8);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .nav-brand {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: 0.05em;
+    margin-right: 16px;
+  }
+
+  .nav-brand span {
+    color: var(--lime-primary);
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .nav-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-btn:hover {
+    color: var(--text-light);
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .nav-btn.active {
+    background: var(--lime-primary);
+    color: var(--navy-deep);
+    border-color: var(--lime-primary);
+    box-shadow: 0 4px 15px var(--lime-shadow);
+  }
+
+  /* Viewport Stage */
+  .stage {
+    display: none;
+    min-height: calc(100vh - 60px);
+    position: relative;
+  }
+
+  .stage.active {
+    display: block;
+  }
+
+  .caption-panel {
+    background: rgba(2, 12, 27, 0.95);
+    border-top: 1px solid rgba(13, 34, 64, 0.8);
+    padding: 12px 24px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+
+  .caption-panel strong {
+    color: var(--lime-primary);
+  }
+
+  /* Reusable Form Components */
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    transition: all 0.25s ease;
+  }
+
+  .form-group input::placeholder {
+    color: rgba(100, 130, 166, 0.5);
+  }
+
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--lime-primary);
+    background: rgba(198, 255, 0, 0.03);
+    box-shadow: 0 0 10px rgba(198, 255, 0, 0.05);
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    background: var(--lime-primary);
+    color: var(--navy-deep);
+    font-family: inherit;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.25s ease;
+  }
+
+  .btn-submit:hover {
+    background: var(--lime-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(198, 255, 0, 0.25);
+  }
+
+  .forgot-link {
+    display: inline-block;
+    margin-top: 14px;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .forgot-link:hover {
+    color: var(--lime-primary);
+  }
+
+  /* ==================================================================
+     VARIANTE 1 — DYNAMIC SPORTS GRID (Cyberpunk Neon)
+  ================================================================== */
+  .stage-v1 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 10% 10%, #06152d, var(--navy-deep) 60%);
+    padding: 24px;
+  }
+  .v1-card {
+    width: 100%;
+    max-width: 400px;
+    background: linear-gradient(135deg, rgba(5, 19, 41, 0.8), rgba(2, 12, 27, 0.95));
+    border: 1px solid rgba(198, 255, 0, 0.1);
+    box-shadow: 0 0 40px rgba(198, 255, 0, 0.03);
+    border-radius: 24px;
+    padding: 40px 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .v1-card::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: -2px; right: -2px; height: 4px;
+    background: linear-gradient(90deg, transparent, var(--lime-primary), transparent);
+  }
+  .v1-logo {
+    width: 80px; height: 80px; object-fit: contain; margin: 0 auto 24px;
+    filter: drop-shadow(0 8px 20px rgba(198, 255, 0, 0.3));
+  }
+  .v1-card h1 {
+    font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 26px; letter-spacing: -0.02em; margin-bottom: 6px;
+  }
+  .v1-card h1 span { color: var(--lime-primary); }
+  .v1-card .desc { color: var(--text-muted); font-size: 13px; margin-bottom: 28px; }
+
+  /* ==================================================================
+     VARIANTE 2 — THE GOLDEN HOUR (Warm/Sunset Strength)
+  ================================================================== */
+  .stage-v2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 80% 90%, rgba(253, 186, 116, 0.12), transparent 50%),
+                radial-gradient(circle at 10% 10%, rgba(198, 255, 0, 0.08), transparent 50%),
+                var(--navy-deep);
+    padding: 24px;
+  }
+  .v2-card {
+    width: 100%;
+    max-width: 390px;
+    background: rgba(5, 19, 41, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border-radius: 28px;
+    padding: 44px 34px;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+    text-align: center;
+  }
+  .v2-logo { width: 72px; margin-bottom: 18px; filter: drop-shadow(0 4px 15px rgba(255,255,255,0.1)); }
+  .v2-card h1 { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 28px; margin-bottom: 8px; }
+  .v2-card .slogan { font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--lime-primary); margin-bottom: 28px; }
+
+  /* ==================================================================
+     VARIANTE 3 — GLASSMORPHISM EXTENDED (Ultrafrost)
+  ================================================================== */
+  .stage-v3 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .v3-bg {
+    position: absolute; inset: 0;
+    background: url('personal-photo.jpg') center 20% / cover no-repeat;
+    filter: blur(4px); scale: 1.05; opacity: 0.35;
+  }
+  .v3-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(2, 12, 27, 0.3) 0%, var(--navy-deep) 90%);
+  }
+  .v3-card {
+    position: relative; z-index: 2; width: 100%; max-width: 380px;
+    background: rgba(5, 19, 41, 0.5); border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(24px) saturate(160%); -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border-radius: 30px; padding: 40px 32px; text-align: center;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+  }
+  .v3-logo { width: 68px; margin-bottom: 20px; filter: drop-shadow(0 0 20px rgba(198, 255, 0, 0.4)); }
+  .v3-card h1 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.01em; margin-bottom: 4px; }
+  .v3-card h1 span { color: var(--lime-primary); }
+  .v3-card .subtitle { color: var(--text-muted); font-size: 13px; margin-bottom: 26px; }
+
+  /* ==================================================================
+     VARIANTE 4 — SIDEBAR DARK EDITORIAL (Elegant Split)
+  ================================================================== */
+  .stage-v4 {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+  }
+  .v4-form-container {
+    background: #020914;
+    border-right: 1px solid rgba(13, 34, 64, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 48px 36px;
+    z-index: 2;
+  }
+  .v4-logo-lockup { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; }
+  .v4-logo-lockup img { width: 44px; }
+  .v4-logo-lockup .title { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 18px; line-height: 1; }
+  .v4-logo-lockup .sub { font-size: 9px; color: var(--lime-primary); letter-spacing: 0.3em; text-transform: uppercase; margin-top: 2px; }
+  .v4-form-container h2 { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 26px; margin-bottom: 6px; }
+  .v4-form-container .desc { color: var(--text-muted); font-size: 13px; margin-bottom: 30px; }
+  
+  .v4-hero-container {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    padding: 60px;
+    overflow: hidden;
+  }
+  .v4-hero-bg {
+    position: absolute; inset: 0;
+    background: url('banner.jpg') center / cover no-repeat;
+    opacity: 0.25;
+  }
+  .v4-hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to right, #020914, transparent 40%),
+                linear-gradient(to top, rgba(2, 9, 20, 0.9) 0%, transparent 60%);
+  }
+  .v4-hero-content { position: relative; z-index: 10; max-width: 500px; }
+  .v4-hero-content h3 { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 32px; line-height: 1.1; margin-bottom: 12px; }
+  .v4-hero-content p { color: var(--lime-primary); font-size: 14px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 600; }
+  
+  @media(max-width: 850px) {
+    .stage-v4 { grid-template-columns: 1fr; }
+    .v4-hero-container { display: none; }
+  }
+
+  /* ==================================================================
+     VARIANTE 5 — BRUTALIST ATHLETIC (Bold Typo)
+  ================================================================== */
+  .stage-v5 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #01060e;
+    padding: 24px;
+  }
+  .v5-container {
+    width: 100%;
+    max-width: 440px;
+    text-align: center;
+  }
+  .v5-logo { width: 70px; margin-bottom: 12px; }
+  .v5-container h1 {
+    font-family: 'Montserrat', sans-serif; font-weight: 950; font-size: clamp(32px, 6vw, 48px);
+    text-transform: uppercase; line-height: 0.95; letter-spacing: -0.04em; margin-bottom: 24px;
+  }
+  .v5-container h1 span { color: var(--lime-primary); }
+  .v5-card {
+    background: #041021;
+    border: 3px solid var(--text-light);
+    border-radius: 0px; /* brutalist square styling */
+    padding: 34px 28px;
+    box-shadow: 10px 10px 0px var(--lime-primary);
+  }
+  .v5-card label { color: var(--text-light); font-weight: 900; }
+  .v5-card input {
+    border: 2px solid rgba(255,255,255,0.15);
+    background: transparent;
+    border-radius: 0px;
+    color: #fff;
+    font-weight: 600;
+  }
+  .v5-card input:focus { border-color: var(--lime-primary); background: transparent; }
+  .v5-card .btn-submit {
+    border-radius: 0px;
+    background: var(--lime-primary);
+    border: 2px solid var(--lime-primary);
+    font-weight: 900;
+  }
+  .v5-card .btn-submit:hover {
+    background: transparent;
+    color: var(--lime-primary);
+    box-shadow: none;
+    transform: none;
+  }
+
+  /* ==================================================================
+     VARIANTE 6 — LIQUID GLOW BACKGROUND (Organic Shapes)
+  ================================================================== */
+  .stage-v6 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #030812;
+    overflow: hidden;
+    padding: 24px;
+  }
+  .v6-glow-1 {
+    position: absolute; top: 20%; left: 30%; width: 450px; height: 450px;
+    background: radial-gradient(circle, rgba(198, 255, 0, 0.08) 0%, transparent 70%);
+    border-radius: 50%; filter: blur(40px); pointer-events: none;
+  }
+  .v6-glow-2 {
+    position: absolute; bottom: 10%; right: 25%; width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(0, 240, 255, 0.06) 0%, transparent 70%);
+    border-radius: 50%; filter: blur(50px); pointer-events: none;
+  }
+  .v6-card {
+    position: relative; z-index: 5;
+    width: 100%; max-width: 380px;
+    background: rgba(4, 13, 27, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 24px;
+    padding: 40px 30px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  }
+  .v6-logo { width: 50px; margin-bottom: 16px; filter: drop-shadow(0 0 12px rgba(198,255,0,0.2)); }
+  .v6-card h1 { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 24px; margin-bottom: 6px; }
+  .v6-card .tag { font-size: 12px; color: var(--text-muted); margin-bottom: 26px; }
+  .v6-card .tag span { color: var(--lime-primary); font-weight: 600; }
+
+  /* ==================================================================
+     VARIANTE 7 — CENTER SPOTLIGHT LOCKUP (SaaS Premium)
+  ================================================================== */
+  .stage-v7 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at center, #0a1f3d 0%, var(--navy-deep) 100%);
+    padding: 24px;
+  }
+  .v7-container {
+    width: 100%;
+    max-width: 370px;
+    text-align: center;
+  }
+  .v7-header { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 30px; }
+  .v7-header img { width: 38px; }
+  .v7-header div { text-align: left; }
+  .v7-header .nm { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 16px; letter-spacing: 0.05em; line-height: 1; }
+  .v7-header .tag { font-size: 9px; text-transform: uppercase; color: var(--lime-primary); letter-spacing: 0.25em; margin-top: 2px; }
+  
+  .v7-card {
+    background: var(--navy-card);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 32px 28px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+  }
+  .v7-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 22px; text-align: left; }
+
+  /* ==================================================================
+     VARIANTE 8 — SPLIT DIAGONAL INVERSE (Marinho/Lime)
+  ================================================================== */
+  .stage-v8 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .v8-left-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    z-index: 2;
+  }
+  .v8-card {
+    width: 100%; max-width: 340px;
+  }
+  .v8-logo { width: 56px; margin-bottom: 20px; }
+  .v8-card h2 { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 28px; margin-bottom: 8px; }
+  .v8-card .desc { color: var(--text-muted); font-size: 13px; margin-bottom: 28px; }
+  
+  .v8-right-hero {
+    position: relative;
+    background: var(--lime-primary);
+    clip-path: polygon(25% 0, 100% 0, 100% 100%, 0 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 60px 60px 100px;
+    overflow: hidden;
+  }
+  .v8-hero-img {
+    position: absolute; inset: 0;
+    background: url('personal-photo.jpg') center / cover no-repeat;
+    opacity: 0.95;
+    mix-blend-mode: multiply;
+  }
+  .v8-right-hero h3 {
+    position: relative; z-index: 5; color: var(--navy-deep);
+    font-family: 'Montserrat', sans-serif; font-weight: 900;
+    font-size: clamp(28px, 4vw, 44px); line-height: 1.05;
+    max-width: 380px; text-transform: uppercase;
+  }
+  .v8-right-hero p {
+    position: relative; z-index: 5; color: var(--navy-deep);
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.25em;
+    font-weight: 700; margin-top: 14px; opacity: 0.8;
+  }
+  
+  @media(max-width: 850px) {
+    .stage-v8 { grid-template-columns: 1fr; }
+    .v8-right-hero { clip-path: polygon(0 18%, 100% 0, 100% 100%, 0 100%); min-height: 250px; padding: 48px; }
+  }
+
+  /* ==================================================================
+     VARIANTE 9 — EXTREME MINIMALIST (Textured Underlines)
+  ================================================================== */
+  .stage-v9 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #020710;
+    padding: 24px;
+  }
+  .v9-wrap {
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+  }
+  .v9-logo { width: 56px; margin-bottom: 24px; filter: grayscale(1) opacity(0.8); }
+  .v9-wrap h1 { font-family: 'Outfit', sans-serif; font-weight: 500; font-size: 28px; margin-bottom: 34px; letter-spacing: -0.01em; }
+  .v9-wrap h1 b { color: var(--lime-primary); font-weight: 800; }
+  
+  /* Underline fields */
+  .v9-field {
+    margin-bottom: 28px;
+    text-align: left;
+    position: relative;
+  }
+  .v9-field label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted);
+  }
+  .v9-field input {
+    width: 100%;
+    padding: 10px 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(100, 130, 166, 0.25);
+    border-radius: 0;
+    color: #fff;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.3s ease;
+  }
+  .v9-field input:focus {
+    outline: none;
+    border-bottom-color: var(--lime-primary);
+  }
+
+  /* ==================================================================
+     VARIANTE 10 — BOLD MAGAZINE COVER (Front Page)
+  ================================================================== */
+  .stage-v10 {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    overflow: hidden;
+  }
+  .v10-magazine-art {
+    position: relative;
+    background-color: #020814;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 60px;
+  }
+  .v10-hero-img {
+    position: absolute; inset: 0;
+    background: url('banner.jpg') center / cover no-repeat;
+    opacity: 0.3;
+  }
+  .v10-magazine-art h1 {
+    position: relative; z-index: 10;
+    font-family: 'Montserrat', sans-serif; font-weight: 900;
+    font-size: clamp(38px, 6vw, 68px); line-height: 0.9;
+    letter-spacing: -0.03em; text-transform: uppercase;
+  }
+  .v10-magazine-art h1 span { color: var(--lime-primary); }
+  .v10-magazine-art .quote {
+    position: relative; z-index: 10;
+    font-family: 'Outfit', sans-serif; font-weight: 400; font-size: 18px;
+    max-width: 450px; line-height: 1.4; color: #fff;
+  }
+  
+  .v10-form-side {
+    background: var(--navy-card);
+    border-left: 1px solid rgba(13, 34, 64, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 48px;
+    position: relative;
+  }
+  .v10-form-side .lockup { display: flex; align-items: center; gap: 10px; margin-bottom: 38px; }
+  .v10-form-side .lockup img { width: 44px; }
+  .v10-form-side .lockup .nm { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 16px; }
+  
+  @media(max-width: 850px) {
+    .stage-v10 { grid-template-columns: 1fr; }
+    .v10-magazine-art { min-height: 250px; padding: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <div class="nav-brand">ANTIGRAVITY <span>FIT</span></div>
+  <div class="nav-tabs">
+    <button class="nav-btn active" data-tab="tab1">1. Cyberpunk Neon</button>
+    <button class="nav-btn" data-tab="tab2">2. Golden Hour</button>
+    <button class="nav-btn" data-tab="tab3">3. Glassmorphic</button>
+    <button class="nav-btn" data-tab="tab4">4. Split Editorial</button>
+    <button class="nav-btn" data-tab="tab5">5. Brutalist Bold</button>
+    <button class="nav-btn" data-tab="tab6">6. Liquid Glow</button>
+    <button class="nav-btn" data-tab="tab7">7. SaaS Spotlight</button>
+    <button class="nav-btn" data-tab="tab8">8. Diagonal Split</button>
+    <button class="nav-btn" data-tab="tab9">9. Textured Mono</button>
+    <button class="nav-btn" data-tab="tab10">10. Magazine Cover</button>
+  </div>
+</div>
+
+<!-- ============ 1 · CYBERPUNK NEON ============ -->
+<div class="stage stage-v1 active" id="tab1">
+  <div class="v1-card">
+    <img src="logo-g.png" alt="JG logo" class="v1-logo">
+    <h1>JG<span>-FIT</span></h1>
+    <p class="desc">Acesse o seu portal de treinos e performance.</p>
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" placeholder="seu@email.com">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" placeholder="••••••••">
+    </div>
+    <button class="btn-submit">Acessar Treino</button>
+    <a href="#" class="forgot-link">Esqueceu sua senha?</a>
+  </div>
+  <div class="caption-panel">Estilo <strong>Cyberpunk Neon</strong>: Card escuro futurista com luz de topo neon verde-lima. Foco em performance digital.</div>
+</div>
+
+<!-- ============ 2 · GOLDEN HOUR ============ -->
+<div class="stage stage-v2" id="tab2">
+  <div class="v2-card">
+    <img src="logo-g.png" alt="Logo" class="v2-logo">
+    <h1>João Guilherme</h1>
+    <p class="slogan">Força, Energia e Foco</p>
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" placeholder="seu@email.com">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" placeholder="••••••••">
+    </div>
+    <button class="btn-submit">Entrar na Conta</button>
+    <a href="#" class="forgot-link">Solicitar redefinição</a>
+  </div>
+  <div class="caption-panel">Estilo <strong>Golden Hour</strong>: Transições de cores quentes e gradientes dourados que remetem a energia, força e calor.</div>
+</div>
+
+<!-- ============ 3 · GLASSMORPHIC ============ -->
+<div class="stage stage-v3" id="tab3">
+  <div class="v3-bg"></div>
+  <div class="v3-overlay"></div>
+  <div class="v3-card">
+    <img src="logo-g.png" alt="Logo" class="v3-logo">
+    <h1>JG<span>-FIT</span></h1>
+    <p class="subtitle">Insira suas credenciais para treinar.</p>
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" placeholder="seu@email.com">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" placeholder="••••••••">
+    </div>
+    <button class="btn-submit">Fazer Login</button>
+    <a href="#" class="forgot-link">Esqueci a senha</a>
+  </div>
+  <div class="caption-panel">Estilo <strong>Glassmorphic Extended</strong>: Card com efeito vidro fosco flutuando sobre a foto em alta qualidade desfocada.</div>
+</div>
+
+<!-- ============ 4 · SPLIT EDITORIAL ============ -->
+<div class="stage stage-v4" id="tab4">
+  <div class="v4-form-container">
+    <div class="v4-logo-lockup">
+      <img src="logo-g.png" alt="JG">
+      <div>
+        <div class="title">JOÃO GUILHERME</div>
+        <div class="sub">Personal Trainer</div>
+      </div>
+    </div>
+    <h2>Bora treinar!</h2>
+    <p class="desc">Acesse para conferir sua planilha esportiva de hoje.</p>
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" placeholder="seu@email.com">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" placeholder="••••••••">
+    </div>
+    <button class="btn-submit">Entrar</button>
+    <a href="#" class="forgot-link">Esqueci minha senha</a>
+  </div>
+  <div class="v4-hero-container">
+    <div class="v4-hero-bg"></div>
+    <div class="v4-hero-overlay"></div>
+    <div class="v4-hero-content">
+      <p>Performance Esportiva</p>
+      <h3>Sua melhor versão começa agora. Foco absoluto.</h3>
+    </div>
+  </div>
+  <div class="caption-panel">Estilo <strong>Split Editorial</strong>: Formulário limpo na lateral esquerda e imagem com recortes inspiradores no painel direito.</div>
+</div>
+
+<!-- ============ 5 · BRUTALIST BOLD ============ -->
+<div class="stage stage-v5" id="tab5">
+  <div class="v5-container">
+    <img src="logo-g.png" alt="Logo" class="v5-logo">
+    <h1>BORA<span>.</span><br>TREINAR<span>.</span></h1>
+    <div class="v5-card">
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" placeholder="seu@email.com">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" placeholder="••••••••">
+      </div>
+      <button class="btn-submit">Entrar</button>
+      <a href="#" class="forgot-link" style="color:var(--text-light)">Esqueci minha senha</a>
+    </div>
+  </div>
+  <div class="caption-panel">Estilo <strong>Brutalist Bold</strong>: Card quadrado com sombras marcantes, borda grossa e tipografia gigantesca em all-caps. Muito agressivo e esportivo.</div>
+</div>
+
+<!-- ============ 6 · LIQUID GLOW ============ -->
+<div class="stage stage-v6" id="tab6">
+  <div class="v6-glow-1"></div>
+  <div class="v6-glow-2"></div>
+  <div class="v6-card">
+    <img src="logo-g.png" alt="Logo" class="v6-logo">
+    <h1>JG-FIT Portal</h1>
+    <p class="tag">Conectado ao Personal <span>João Guilherme</span></p>
+    <div class="form-group">
+      <label>E-mail</label>
+      <input type="email" placeholder="seu@email.com">
+    </div>
+    <div class="form-group">
+      <label>Senha</label>
+      <input type="password" placeholder="••••••••">
+    </div>
+    <button class="btn-submit">Entrar</button>
+    <a href="#" class="forgot-link">Esqueci a Senha</a>
+  </div>
+  <div class="caption-panel">Estilo <strong>Liquid Glow</strong>: Fundo escuro com bolas de luz neon desfocadas simulando lava-glow em movimento lento. Super moderno.</div>
+</div>
+
+<!-- ============ 7 · SAAS SPOTLIGHT ============ -->
+<div class="stage stage-v7" id="tab7">
+  <div class="v7-container">
+    <div class="v7-header">
+      <img src="logo-g.png" alt="JG">
+      <div>
+        <div class="nm">JG-FIT SYSTEM</div>
+        <div class="tag">Prescrição & Resultados</div>
+      </div>
+    </div>
+    <div class="v7-card">
+      <h2>Acesse sua conta</h2>
+      <div class="form-group">
+        <label>Endereço de E-mail</label>
+        <input type="email" placeholder="seu@email.com">
+      </div>
+      <div class="form-group">
+        <label>Senha de Acesso</label>
+        <input type="password" placeholder="••••••••">
+      </div>
+      <button class="btn-submit">Entrar na plataforma</button>
+      <a href="#" class="forgot-link">Redefinir senha de acesso</a>
+    </div>
+  </div>
+  <div class="caption-panel">Estilo <strong>SaaS Spotlight</strong>: Visual limpo e corporativo premium, com luz radial sutil centralizada atrás do card. Vibe sistema web.</div>
+</div>
+
+<!-- ============ 8 · DIAGONAL SPLIT ============ -->
+<div class="stage stage-v8" id="tab8">
+  <div class="v8-left-container">
+    <div class="v8-card">
+      <img src="logo-g.png" alt="JG" class="v8-logo">
+      <h2>Área do Aluno</h2>
+      <p class="desc">Gerencie seus treinos e acompanhe sua evolução física diária.</p>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" placeholder="seu@email.com">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" placeholder="••••••••">
+      </div>
+      <button class="btn-submit">Entrar</button>
+      <a href="#" class="forgot-link">Recuperar senha de acesso</a>
+    </div>
+  </div>
+  <div class="v8-right-hero">
+    <div class="v8-hero-img"></div>
+    <h3>João Guilherme</h3>
+    <p>História, energia e um novo começo</p>
+  </div>
+  <div class="caption-panel">Estilo <strong>Diagonal Split</strong>: Um corte diagonal dinâmico verde-lima à direita e área de login minimalista navy à esquerda.</div>
+</div>
+
+<!-- ============ 9 · TEXTURED MONO ============ -->
+<div class="stage stage-v9" id="tab9">
+  <div class="v9-wrap">
+    <img src="logo-g.png" alt="JG" class="v9-logo">
+    <h1>BORA <b>TREINAR</b></h1>
+    <div class="v9-field">
+      <label>E-mail</label>
+      <input type="email" placeholder="Digite seu e-mail">
+    </div>
+    <div class="v9-field">
+      <label>Senha</label>
+      <input type="password" placeholder="Digite sua senha">
+    </div>
+    <button class="btn-submit" style="margin-top: 10px;">Entrar na Planilha</button>
+    <a href="#" class="forgot-link">Esqueci a senha</a>
+  </div>
+  <div class="caption-panel">Estilo <strong>Textured Mono</strong>: Estilo minimalista escuro onde os inputs perdem as caixas tradicionais e são apenas linhas de destaque neon.</div>
+</div>
+
+<!-- ============ 10 · MAGAZINE COVER ============ -->
+<div class="stage stage-v10" id="tab10">
+  <div class="v10-magazine-art">
+    <div class="v10-hero-img"></div>
+    <h1>JG<span>-FIT</span><br>MAGAZINE</h1>
+    <div class="quote">"Treino de verdade não é sobre ter tempo, é sobre ter prioridades. Defina as suas agora."</div>
+  </div>
+  <div class="v10-form-side">
+    <div class="v10-form-side-content">
+      <div class="lockup">
+        <img src="logo-g.png" alt="JG">
+        <div>
+          <div class="nm">JOÃO GUILHERME</div>
+          <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.25em;">Acesso Aluno</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" placeholder="seu@email.com">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" placeholder="••••••••">
+      </div>
+      <button class="btn-submit">Fazer Check-in</button>
+      <a href="#" class="forgot-link">Esqueci minha senha</a>
+    </div>
+  </div>
+  <div class="caption-panel">Estilo <strong>Magazine Cover</strong>: Capa de revista de musculação na esquerda com frase motivacional e formulário de login premium na direita.</div>
+</div>
+
+<script>
+  const btns = document.querySelectorAll('.nav-btn');
+  const stages = document.querySelectorAll('.stage');
+  
+  btns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      btns.forEach(b => b.classList.remove('active'));
+      stages.forEach(s => s.classList.remove('active'));
+      
+      btn.classList.add('active');
+      const tabId = btn.getAttribute('data-tab');
+      document.getElementById(tabId).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
