@@ -1,0 +1,290 @@
+// JG-FIT — modelo de dados do backend
+// Single-tenant por enquanto (1 personal). `tenantId` ja existe (nullable) para
+// virar white-label multi-tenant no futuro sem reescrever o schema.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // conexao pooled (pgbouncer) — runtime
+  directUrl = env("DIRECT_URL")   // conexao direta — migrations
+}
+
+// ----------------------------------------------------------------------------
+// Enums
+// ----------------------------------------------------------------------------
+
+enum Role {
+  PROFESSOR
+  ALUNO
+}
+
+enum Sex {
+  MASCULINO
+  FEMININO
+  OUTRO
+}
+
+enum Goal {
+  HIPERTROFIA
+  EMAGRECIMENTO
+  CONDICIONAMENTO
+  FORCA
+  SAUDE
+  REABILITACAO
+}
+
+enum DayOfWeek {
+  SEGUNDA
+  TERCA
+  QUARTA
+  QUINTA
+  SEXTA
+  SABADO
+  DOMINGO
+}
+
+enum ScheduleType {
+  TREINO
+  CARDIO
+  DESCANSO
+}
+
+enum PhotoAngle {
+  FRENTE
+  LADO
+  COSTAS
+}
+
+// ----------------------------------------------------------------------------
+// Usuarios & alunos
+// ----------------------------------------------------------------------------
+
+// Espelha o usuario do Supabase Auth (mesmo id).
+model User {
+  id        String   @id // = auth.users.id (uuid do Supabase)
+  email     String   @unique
+  name      String?
+  role      Role     @default(ALUNO)
+  tenantId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student      Student?
+  chatMessages ChatMessage[] @relation("ChatFromUser")
+}
+
+model Student {
+  id              String    @id @default(uuid())
+  userId          String?   @unique // login do aluno (Supabase Auth)
+  tenantId        String?
+  name            String
+  birthdate       DateTime?
+  sex             Sex?
+  heightCm        Float?
+  weightKg        Float?
+  goal            Goal?
+  weeklyFrequency Int?
+  bodyFatPct      Float?
+  notes           String?
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workouts        Workout[]
+  periodizations  Periodization[]
+  scheduleItems   WeeklyScheduleItem[]
+  assessments     Assessment[]
+  measurements    Measurement[]
+  photos          ProgressPhoto[]
+  workoutLogs     WorkoutLog[]
+  chatMessages    ChatMessage[]
+  personaMatch    PersonaMatch?
+
+  @@index([tenantId])
+}
+
+// ----------------------------------------------------------------------------
+// Exercicios & treinos
+// ----------------------------------------------------------------------------
+
+model Exercise {
+  id           String   @id @default(uuid())
+  tenantId     String?
+  name         String
+  muscleGroup  String?
+  videoUrl     String?
+  instructions String?
+  createdAt    DateTime @default(now())
+
+  workoutExercises WorkoutExercise[]
+
+  @@index([tenantId])
+}
+
+model Workout {
+  id              String   @id @default(uuid())
+  tenantId        String?
+  name            String
+  label           String? // "A", "B", "C"...
+  isTemplate      Boolean  @default(false)
+  studentId       String?
+  periodizationId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  student       Student?           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  periodization Periodization?     @relation(fields: [periodizationId], references: [id], onDelete: SetNull)
+  exercises     WorkoutExercise[]
+  scheduleItems WeeklyScheduleItem[]
+  logs          WorkoutLog[]
+
+  @@index([studentId])
+  @@index([tenantId])
+}
+
+model WorkoutExercise {
+  id         String  @id @default(uuid())
+  workoutId  String
+  exerciseId String
+  order      Int     @default(0)
+  sets       Int?
+  reps       String? // "8-12", "10", "ate a falha"
+  loadKg     Float?
+  restSec    Int?
+  notes      String?
+
+  workout  Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@index([workoutId])
+}
+
+model Periodization {
+  id        String    @id @default(uuid())
+  tenantId  String?
+  studentId String
+  name      String
+  startDate DateTime?
+  endDate   DateTime?
+  notes     String?
+  createdAt DateTime  @default(now())
+
+  student  Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  workouts Workout[]
+
+  @@index([studentId])
+}
+
+model WeeklyScheduleItem {
+  id        String       @id @default(uuid())
+  studentId String
+  dayOfWeek DayOfWeek
+  type      ScheduleType @default(DESCANSO)
+  workoutId String?
+  notes     String?
+
+  student Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  workout Workout? @relation(fields: [workoutId], references: [id], onDelete: SetNull)
+
+  @@unique([studentId, dayOfWeek])
+}
+
+// ----------------------------------------------------------------------------
+// Avaliacoes & evolucao
+// ----------------------------------------------------------------------------
+
+model Assessment {
+  id             String   @id @default(uuid())
+  studentId      String
+  date           DateTime @default(now())
+  weightKg       Float?
+  bodyFatPct     Float?
+  circumferences Json? // { braco: 38, cintura: 80, ... }
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+model Measurement {
+  id         String   @id @default(uuid())
+  studentId  String
+  date       DateTime @default(now())
+  weightKg   Float?
+  bodyFatPct Float?
+  extra      Json?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+model ProgressPhoto {
+  id          String      @id @default(uuid())
+  studentId   String
+  date        DateTime    @default(now())
+  storagePath String // path no bucket do Supabase Storage
+  angle       PhotoAngle?
+  createdAt   DateTime    @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+// ----------------------------------------------------------------------------
+// Logs de treino (assiduidade / adesao)
+// ----------------------------------------------------------------------------
+
+model WorkoutLog {
+  id        String   @id @default(uuid())
+  studentId String
+  workoutId String?
+  date      DateTime @default(now())
+  loadsUsed Json? // { exerciseId: loadKg, ... }
+  completed Boolean  @default(true)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  student Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  workout Workout? @relation(fields: [workoutId], references: [id], onDelete: SetNull)
+
+  @@index([studentId])
+}
+
+// ----------------------------------------------------------------------------
+// Chat aluno <-> professor
+// ----------------------------------------------------------------------------
+
+model ChatMessage {
+  id         String    @id @default(uuid())
+  studentId  String // conversa pertence a este aluno
+  fromUserId String
+  body       String
+  sentAt     DateTime  @default(now())
+  readAt     DateTime?
+
+  student  Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  fromUser User    @relation("ChatFromUser", fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+// ----------------------------------------------------------------------------
+// Motor de Personas (cache do resultado da IA)
+// ----------------------------------------------------------------------------
+
+model PersonaMatch {
+  id         String   @id @default(uuid())
+  studentId  String   @unique
+  results    Json // [{ matchStudentId, score, reasons }]
+  computedAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
