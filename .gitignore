@@ -42,3 +42,6 @@ coverage/
 .railway/
 .agents/
 .railway-config-pull-*/
+
+# Mockups de referencia (local, nao faz parte do app)
+design-mockups/
