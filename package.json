@@ -1,0 +1,10 @@
+{
+  "name": "jg-fit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "JG-FIT monorepo — backend (NestJS) serve a API + o frontend (Next.js) no mesmo link.",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install && npm run build && cd .. && node scripts/copy-client.js",
+    "start": "node backend/dist/main.js"
+  }
+}
