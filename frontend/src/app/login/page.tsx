@@ -118,24 +118,8 @@ export default function LoginPage() {
     }
   };
 
-  const handleSignUp = async () => {
-    if (!email || !password) {
-      setError('Preencha e-mail e senha para se cadastrar.');
-      return;
-    }
-    setError('');
-    setIsLoading(true);
-    const { error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (authError) {
-      setError(authError.message || 'Erro ao cadastrar.');
-      setIsLoading(false);
-      return;
-    }
-    setError('Cadastro realizado com sucesso! Faça login ou verifique seu e-mail.');
-    setIsLoading(false);
+  const handleSignUp = () => {
+    window.location.href = '/cadastro';
   };
 
   /** Lockup logo + nome (reutilizado nos dois layouts). */
