@@ -18,6 +18,7 @@ yarn-error.log*
 
 # env (qualquer nivel)
 .env
+railway-*-env.json
 .env.local
 .env.development.local
 .env.test.local
