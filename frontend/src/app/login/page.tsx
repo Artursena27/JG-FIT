@@ -67,6 +67,9 @@ export default function LoginPage() {
     setIsLoading(true);
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/login`,
+      },
     });
     if (authError) {
       setError('Erro ao entrar com Google.');
