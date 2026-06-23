@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useBrand } from '@/context/BrandContext';
-import Logo from '@/components/Logo';
 import { Mail, Lock, Phone, User, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
@@ -48,10 +47,27 @@ export default function CadastroPage() {
     }
   };
 
+  const [firstName, ...rest] = brand.name.split(' ');
+  const lastName = rest.join(' ');
+
+  const renderLockup = () => (
+    <div className="flex items-center justify-center gap-3">
+      <img src="/logo-g.png" alt={brand.name} className="w-11 h-11 object-contain" />
+      <div className="text-left">
+        <div className="font-extrabold leading-none text-base tracking-wide uppercase text-white">
+          {firstName} {lastName}
+        </div>
+        <div className="text-[9px] tracking-[0.32em] uppercase mt-1 font-semibold text-primary">
+          Personal Trainer
+        </div>
+      </div>
+    </div>
+  );
+
   if (success) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-bg-main p-6 text-center text-text-main">
-        <Logo size="large" />
+        {renderLockup()}
         <div className="mt-10 max-w-md bg-bg-card border border-border-custom p-8 rounded-3xl shadow-2xl">
           <h2 className="text-2xl font-black text-white mb-4">Quase lá!</h2>
           <p className="text-text-sub mb-8 leading-relaxed">
@@ -71,7 +87,7 @@ export default function CadastroPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-bg-main p-6 text-text-main">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
-          <Logo size="large" />
+          {renderLockup()}
         </div>
 
         <div className="bg-bg-card border border-border-custom p-8 rounded-3xl shadow-2xl">
