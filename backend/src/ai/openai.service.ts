@@ -55,4 +55,24 @@ export class OpenAiService {
       throw new ServiceUnavailableException('JSON invalido retornado pela IA.');
     }
   }
+
+  /**
+   * Pede ao modelo uma resposta em texto puro.
+   */
+  async completeText(system: string, user: string): Promise<string> {
+    const completion = await this.client.chat.completions.create({
+      model: this.model,
+      temperature: 0.5,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+    });
+
+    const content = completion.choices[0]?.message?.content;
+    if (!content) {
+      throw new ServiceUnavailableException('Resposta vazia da OpenAI.');
+    }
+    return content.trim();
+  }
 }

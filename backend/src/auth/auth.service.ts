@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Role, User } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -43,12 +45,28 @@ export class AuthService {
     const isProfessor =
       !!email && !!professorEmail && email.toLowerCase() === professorEmail;
 
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         id,
         email: email ?? `${id}@sem-email.local`,
         role: isProfessor ? Role.PROFESSOR : Role.ALUNO,
       },
     });
+
+    if (!isProfessor) {
+      await this.prisma.student.create({
+        data: {
+          userId: id,
+          name: email ? email.split('@')[0] : 'Novo Aluno',
+          status: 'PENDING',
+        },
+      });
+      // Dispara o e-mail de aprovação apenas na CRIAÇÃO (idempotente)
+      if (email) {
+        await this.mailService.sendAwaitingApproval(email);
+      }
+    }
+
+    return user;
   }
 }

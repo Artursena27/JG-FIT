@@ -58,6 +58,19 @@ enum PhotoAngle {
   COSTAS
 }
 
+enum StudentStatus {
+  PENDING
+  APPROVED
+  ONBOARDED
+  REJECTED
+}
+
+enum TrainingExperience {
+  INICIANTE
+  INTERMEDIARIO
+  AVANCADO
+}
+
 // ----------------------------------------------------------------------------
 // Usuarios & alunos
 // ----------------------------------------------------------------------------
@@ -77,21 +90,47 @@ model User {
 }
 
 model Student {
-  id              String    @id @default(uuid())
-  userId          String?   @unique // login do aluno (Supabase Auth)
+  id              String        @id @default(uuid())
+  userId          String?       @unique // login do aluno (Supabase Auth)
   tenantId        String?
   name            String
+  status          StudentStatus @default(PENDING) // Controle de fluxo de entrada
+  approvedAt      DateTime?
+  
+  // -- Bloco 1: Biometria
   birthdate       DateTime?
   sex             Sex?
   heightCm        Float?
   weightKg        Float?
-  goal            Goal?
-  weeklyFrequency Int?
   bodyFatPct      Float?
+  
+  // -- Bloco 2: Objetivos e Experiencia
+  goal               Goal?
+  goalDeadline       String?       // ex: "3 meses", "ate dezembro"
+  trainingExperience TrainingExperience?
+  trainingTime       String?       // ex: "1 ano", "nunca treinou"
+  
+  // -- Bloco 3: Disponibilidade
+  weeklyFrequency    Int?          // ex: 5 (dias por semana)
+  sessionMinutes     Int?          // ex: 60 (minutos por sessao)
+  preferredTime      String?       // ex: "Manha", "Noite"
+  availableDays      Json?         // ex: ["SEG", "TER", "QUI"]
+  
+  // -- Bloco 4: Local e Equipamentos
+  trainingLocation String?      // ex: "Academia", "Casa"
+  equipment        String?      // ex: "Halteres, elastico" (se em casa)
+  
+  // -- Bloco 5: Saude e Estilo de vida
+  injuries         String?      // ex: "Condromalacia no joelho direito"
+  healthConditions String?      // ex: "Hipertensao controlada"
+  profession       String?      // ex: "Programador (sedentario)"
+  sleepHours       Float?       // ex: 7.5
+  preferences      Json?        // ex: ["Musculacao", "Crossfit"]
+  
   notes           String?
-  active          Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  active          Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   user            User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   workouts        Workout[]

@@ -57,6 +57,12 @@ async function main() {
         weightKg: s.weightKg,
         heightCm: s.heightCm,
         bodyFatPct: s.bodyFatPct,
+        status: 'ONBOARDED',
+        trainingExperience: 'INTERMEDIARIO',
+        trainingTime: '2 anos',
+        trainingLocation: 'Academia',
+        equipment: 'Maquinas e pesos livres',
+        availableDays: ['SEG', 'TER', 'QUA', 'QUI', 'SEX'],
       },
     });
   }

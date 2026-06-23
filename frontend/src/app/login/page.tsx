@@ -30,6 +30,8 @@ export default function LoginPage() {
       setIsLoading(true);
       
       let role = 'ALUNO';
+      let status = 'PENDING';
+      
       try {
         const res = await fetch(`${API_URL}/api/auth/me`, {
           headers: { Authorization: `Bearer ${session.access_token}` },
@@ -37,13 +39,25 @@ export default function LoginPage() {
         if (res.ok) {
           const me = await res.json();
           role = me.role ?? 'ALUNO';
+          status = me.status ?? 'PENDING';
         }
       } catch {
         // Fallback
       }
 
       const slug = brand.name.toLowerCase().replace(/\s+/g, '-');
-      window.location.href = `/${role === 'PROFESSOR' ? 'professor' : 'aluno'}/dashboard?personal=${slug}`;
+      
+      if (role === 'PROFESSOR') {
+        window.location.href = `/professor/dashboard?personal=${slug}`;
+      } else {
+        if (status === 'PENDING') {
+          window.location.href = `/aluno/aguardando?personal=${slug}`;
+        } else if (status === 'APPROVED') {
+          window.location.href = `/aluno/onboarding?personal=${slug}`;
+        } else {
+          window.location.href = `/aluno/dashboard?personal=${slug}`;
+        }
+      }
     };
 
     // Escuta mudanças de estado (como o retorno do redirecionamento do Google)
