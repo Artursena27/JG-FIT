@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useBrand } from '@/context/BrandContext';
 import { Mail, Lock } from 'lucide-react';
+import { supabase, API_URL } from '@/lib/supabaseClient';
 
 /**
  * Tela de login JG-FIT.
@@ -22,7 +23,7 @@ export default function LoginPage() {
   const firstName = brand.name.split(' ')[0];
   const lastName = brand.name.split(' ').slice(1).join(' ');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Preencha e-mail e senha.');
@@ -30,14 +31,35 @@ export default function LoginPage() {
     }
     setError('');
     setIsLoading(true);
+
+    // 1) Autentica no Supabase Auth (e-mail/senha real)
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (authError || !data.session) {
+      setError('E-mail ou senha incorretos.');
+      setIsLoading(false);
+      return;
+    }
+
+    // 2) Descobre o papel (Professor/Aluno) consultando o backend
+    let role = 'ALUNO';
+    try {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${data.session.access_token}` },
+      });
+      if (res.ok) {
+        const me = await res.json();
+        role = me.role ?? 'ALUNO';
+      }
+    } catch {
+      // se o backend nao responder, segue como ALUNO
+    }
+
+    // 3) Roteia pro painel certo
     const slug = brand.name.toLowerCase().replace(/\s+/g, '-');
-    const isProfessor =
-      email.includes('personal') ||
-      email.includes('admin') ||
-      email.includes('professor');
-    setTimeout(() => {
-      window.location.href = `/${isProfessor ? 'professor' : 'aluno'}/dashboard?personal=${slug}`;
-    }, 1000);
+    window.location.href = `/${role === 'PROFESSOR' ? 'professor' : 'aluno'}/dashboard?personal=${slug}`;
   };
 
   /** Lockup logo + nome (reutilizado nos dois layouts). */
