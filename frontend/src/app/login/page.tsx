@@ -62,6 +62,38 @@ export default function LoginPage() {
     window.location.href = `/${role === 'PROFESSOR' ? 'professor' : 'aluno'}/dashboard?personal=${slug}`;
   };
 
+  const handleGoogleLogin = async () => {
+    setError('');
+    setIsLoading(true);
+    const { error: authError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    });
+    if (authError) {
+      setError('Erro ao entrar com Google.');
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    if (!email || !password) {
+      setError('Preencha e-mail e senha para se cadastrar.');
+      return;
+    }
+    setError('');
+    setIsLoading(true);
+    const { error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    if (authError) {
+      setError(authError.message || 'Erro ao cadastrar.');
+      setIsLoading(false);
+      return;
+    }
+    setError('Cadastro realizado com sucesso! Faça login ou verifique seu e-mail.');
+    setIsLoading(false);
+  };
+
   /** Lockup logo + nome (reutilizado nos dois layouts). */
   const renderLockup = (light = false) => (
     <div className="flex items-center gap-3">
@@ -149,27 +181,43 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full py-3.5 rounded-xl font-extrabold text-[13px] uppercase tracking-[0.08em] transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
-        style={{
-          backgroundColor: c.primary,
-          color: c.accent,
-          boxShadow: `0 10px 30px ${c.primary}33`,
-        }}
-      >
-        {isLoading ? (
-          <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-        ) : (
-          'Entrar'
-        )}
-      </button>
+      <div className="flex flex-col gap-3">
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full py-3.5 rounded-xl font-extrabold text-[13px] uppercase tracking-[0.08em] transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer"
+          style={{
+            backgroundColor: c.primary,
+            color: c.accent,
+            boxShadow: `0 10px 30px ${c.primary}33`,
+          }}
+        >
+          {isLoading ? (
+            <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          ) : (
+            'Entrar'
+          )}
+        </button>
 
-      <p className="text-center text-xs pt-1" style={{ color: c.textSecondary }}>
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+          className="w-full py-3.5 rounded-xl font-extrabold text-[13px] uppercase tracking-[0.08em] transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 flex items-center justify-center gap-2 cursor-pointer border border-white/10"
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.05)',
+            color: c.text,
+          }}
+        >
+          <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
+          Entrar com Google
+        </button>
+      </div>
+
+      <p className="text-center text-xs pt-2" style={{ color: c.textSecondary }}>
         Não tem conta?{' '}
-        <button type="button" className="font-bold hover:underline cursor-pointer" style={{ color: c.primary }}>
-          Fale com seu personal
+        <button type="button" onClick={handleSignUp} disabled={isLoading} className="font-bold hover:underline cursor-pointer" style={{ color: c.primary }}>
+          Cadastrar agora
         </button>
       </p>
     </form>
