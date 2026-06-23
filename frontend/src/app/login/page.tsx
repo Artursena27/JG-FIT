@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useBrand } from '@/context/BrandContext';
 import { Mail, Lock } from 'lucide-react';
 import { supabase, API_URL } from '@/lib/supabaseClient';
@@ -22,6 +22,48 @@ export default function LoginPage() {
   const c = brand.colors;
   const firstName = brand.name.split(' ')[0];
   const lastName = brand.name.split(' ').slice(1).join(' ');
+
+  // Redireciona o usuário caso ele já esteja logado (ex: retorno do Google OAuth)
+  useEffect(() => {
+    const checkUserAndRedirect = async (session: any) => {
+      if (!session) return;
+      setIsLoading(true);
+      
+      let role = 'ALUNO';
+      try {
+        const res = await fetch(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const me = await res.json();
+          role = me.role ?? 'ALUNO';
+        }
+      } catch {
+        // Fallback
+      }
+
+      const slug = brand.name.toLowerCase().replace(/\s+/g, '-');
+      window.location.href = `/${role === 'PROFESSOR' ? 'professor' : 'aluno'}/dashboard?personal=${slug}`;
+    };
+
+    // Escuta mudanças de estado (como o retorno do redirecionamento do Google)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        checkUserAndRedirect(session);
+      }
+    });
+
+    // Checa se já tem sessão ativa ao carregar a página
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        checkUserAndRedirect(session);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [brand.name]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
