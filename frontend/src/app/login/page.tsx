@@ -270,25 +270,38 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full" style={{ backgroundColor: c.bg, color: c.text }}>
-      {/* ============================ MOBILE: Foto Imersiva ============================ */}
-      <div className="lg:hidden relative min-h-screen flex flex-col justify-end overflow-hidden">
+      {/* ============================ MOBILE: G Watermark ============================ */}
+      <div
+        className="lg:hidden relative min-h-screen flex flex-col justify-center overflow-hidden px-7 py-10"
+        style={{ backgroundColor: c.bg }}
+      >
+        {/* G gigante de marca d'agua */}
         <img
-          src="/personal-photo.jpg"
-          alt={brand.name}
-          className="absolute inset-0 w-full h-full object-cover object-[center_18%]"
+          src="/logo-g.png"
+          alt=""
+          aria-hidden
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[135%] max-w-none object-contain opacity-[0.06] pointer-events-none"
         />
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `linear-gradient(180deg, transparent 28%, ${c.bg}99 52%, ${c.bg} 88%)`,
-          }}
-        />
-        <div className="relative z-10 px-6 pb-9 pt-10">
-          <div className="mb-5">{renderLockup(true)}</div>
-          <h1 className="text-2xl font-extrabold mb-1">Treine com energia</h1>
-          <p className="text-sm mb-6" style={{ color: c.textSecondary }}>
-            Entre e veja seu treino da semana.
-          </p>
+        <div className="relative z-10 text-center">
+          <img
+            src="/logo-g.png"
+            alt={brand.name}
+            className="w-14 h-14 object-contain mx-auto mb-4"
+            style={{ filter: `drop-shadow(0 8px 22px ${c.primary}59)` }}
+          />
+          <div
+            className="text-[10px] font-semibold tracking-[0.42em] uppercase mb-1"
+            style={{ color: c.primary }}
+          >
+            {brand.name}
+          </div>
+          <h1 className="text-3xl font-extrabold mb-1">Entrar</h1>
+          <div
+            className="text-[11px] tracking-[0.26em] uppercase mb-6"
+            style={{ color: c.textSecondary }}
+          >
+            Área do Aluno
+          </div>
           {renderForm()}
         </div>
       </div>
