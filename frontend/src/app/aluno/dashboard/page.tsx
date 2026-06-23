@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useBrand } from '@/context/BrandContext';
 import Logo from '@/components/Logo';
+import { supabase } from '@/lib/supabaseClient';
 import { 
   Dumbbell, 
   TrendingUp, 
@@ -178,7 +179,10 @@ export default function AlunoDashboard() {
           </div>
         </div>
         <button 
-          onClick={() => window.location.href = '/login'}
+          onClick={async () => {
+            await supabase.auth.signOut();
+            window.location.href = '/login';
+          }}
           className="p-2 hover:bg-white/5 rounded-lg text-text-sub hover:text-red-400 transition-colors cursor-pointer"
         >
           <LogOut className="w-5 h-5" />

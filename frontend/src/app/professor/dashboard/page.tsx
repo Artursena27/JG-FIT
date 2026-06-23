@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useBrand } from '@/context/BrandContext';
 import Logo from '@/components/Logo';
+import { supabase } from '@/lib/supabaseClient';
 
 import { 
   Users, 
@@ -276,7 +277,10 @@ export default function ProfessorDashboard() {
         </div>
 
         <button 
-          onClick={() => window.location.href = '/login'}
+          onClick={async () => {
+            await supabase.auth.signOut();
+            window.location.href = '/login';
+          }}
           className="flex items-center gap-2 px-3 py-1.5 border border-border-custom rounded-xl hover:bg-red-500/10 hover:border-red-500/20 text-text-sub hover:text-red-400 text-xs font-bold transition-all cursor-pointer"
         >
           <img src="/personal-photo.jpg" alt="João Guilherme" className="w-5 h-5 rounded-full object-cover border border-white/10" />
