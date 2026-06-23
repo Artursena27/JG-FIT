@@ -99,23 +99,8 @@ export default function LoginPage() {
       return;
     }
 
-    // 2) Descobre o papel (Professor/Aluno) consultando o backend
-    let role = 'ALUNO';
-    try {
-      const res = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${data.session.access_token}` },
-      });
-      if (res.ok) {
-        const me = await res.json();
-        role = me.role ?? 'ALUNO';
-      }
-    } catch {
-      // se o backend nao responder, segue como ALUNO
-    }
-
-    // 3) Roteia pro painel certo
-    const slug = brand.name.toLowerCase().replace(/\s+/g, '-');
-    window.location.href = `/${role === 'PROFESSOR' ? 'professor' : 'aluno'}/dashboard?personal=${slug}`;
+    // Apenas aguarda o onAuthStateChange ser disparado globalmente,
+    // que fará o roteamento correto checando o status do aluno (PENDING, APPROVED, ONBOARDED)
   };
 
   const handleGoogleLogin = async () => {

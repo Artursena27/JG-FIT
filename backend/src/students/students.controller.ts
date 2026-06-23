@@ -21,6 +21,7 @@ export class StudentsController {
   }
 
   @Post('students/me/onboarding')
+  @RequireStatus('APPROVED', 'ONBOARDED')
   saveOnboarding(@CurrentUser() user: User, @Body() data: OnboardingDto) {
     return this.studentsService.saveOnboarding(user.id, data);
   }
