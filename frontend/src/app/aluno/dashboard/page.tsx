@@ -118,6 +118,7 @@ export default function AlunoDashboard() {
 
   const [student, setStudent] = useState<StudentData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [myUserId, setMyUserId] = useState('');
 
   useEffect(() => {
     setIsMounted(true);
@@ -125,6 +126,7 @@ export default function AlunoDashboard() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
+        setMyUserId(session.user.id);
         const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
         const headers = { Authorization: `Bearer ${session.access_token}` };
         
@@ -227,29 +229,27 @@ export default function AlunoDashboard() {
     e.preventDefault();
     if (!newMessage.trim()) return;
     
-    const tempMsg = {
-      id: Date.now(),
-      sender: 'student',
-      text: newMessage,
-      time: 'Agora'
-    };
-    setMessages(prev => [...prev, tempMsg]);
-    const msgText = newMessage;
+    const msgText = newMessage.trim();
     setNewMessage('');
+    // Mensagem otimista no formato real do backend (fromUserId/body/sentAt)
+    setMessages(prev => [...prev, { id: `temp-${Date.now()}`, fromUserId: myUserId, body: msgText, sentAt: new Date().toISOString() }]);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-      
+
+      // Backend espera { body }. Envia e recarrega a conversa com ids/formato reais.
       await fetch(`${API_URL}/api/chat/me`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}` 
+          Authorization: `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ text: msgText })
+        body: JSON.stringify({ body: msgText })
       });
+      const res = await fetch(`${API_URL}/api/chat/me`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+      if (res.ok) setMessages(await res.json());
     } catch (err) {
       console.error(err);
     }
@@ -751,7 +751,10 @@ export default function AlunoDashboard() {
             {/* Chat Messages */}
             <div className="flex-1 p-4 overflow-y-auto space-y-3.5">
               {messages.map((msg) => {
-                const isMe = msg.sender === 'student';
+                const isMe = msg.fromUserId === myUserId;
+                const time = msg.sentAt
+                  ? new Date(msg.sentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                  : '';
                 return (
                   <div 
                     key={msg.id}
@@ -765,12 +768,12 @@ export default function AlunoDashboard() {
                       }`}
                       style={isMe ? { backgroundColor: brand.colors.primary, color: brand.colors.accent } : {}}
                     >
-                      <p>{msg.text}</p>
-                      <span 
+                      <p>{msg.body}</p>
+                      <span
                         className={`text-[8px] text-right mt-1.5 block opacity-60`}
                         style={{ color: isMe ? brand.colors.accent : brand.colors.textSecondary }}
                       >
-                        {msg.time}
+                        {time}
                       </span>
                     </div>
                   </div>

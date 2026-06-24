@@ -155,6 +155,8 @@ export default function ProfessorDashboard() {
   const [selectedChatStudent, setSelectedChatStudent] = useState<ApiStudent | null>(null);
   const [chatMessages, setChatMessages] = useState<Record<string, any[]>>({});
   const [chatInput, setChatInput] = useState('');
+  // Id do usuário logado (professor) — para alinhar/identificar as mensagens próprias.
+  const [myUserId, setMyUserId] = useState('');
 
   // Fetch chat for selected student
   useEffect(() => {
@@ -175,6 +177,7 @@ export default function ProfessorDashboard() {
 
   useEffect(() => {
     setIsMounted(true);
+    supabase.auth.getUser().then(({ data }) => setMyUserId(data.user?.id ?? ''));
   }, []);
 
   // Chamada autenticada ao backend (injeta o JWT do Supabase).
@@ -267,29 +270,21 @@ export default function ProfessorDashboard() {
     if (!chatInput.trim() || !selectedChatStudent) return;
 
     const studentId = selectedChatStudent.id;
-    const currentMsgs = chatMessages[studentId] || [];
-    
-    const newMsg = {
-      id: Date.now(),
-      sender: 'teacher',
-      text: chatInput,
-      time: 'Agora'
-    };
-
-    setChatMessages({
-      ...chatMessages,
-      [studentId]: [...currentMsgs, newMsg]
-    });
-    
-    const msgText = chatInput;
+    const msgText = chatInput.trim();
     setChatInput('');
 
     try {
+      // Backend espera { body }. Envia e recarrega a conversa com o formato real.
       await authedFetch(`/api/chat/${studentId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: msgText })
+        body: JSON.stringify({ body: msgText }),
       });
+      const res = await authedFetch(`/api/chat/${studentId}`);
+      if (res.ok) {
+        const msgs = await res.json();
+        setChatMessages((prev) => ({ ...prev, [studentId]: msgs }));
+      }
     } catch (err) {
       console.error(err);
     }
@@ -748,7 +743,8 @@ export default function ProfessorDashboard() {
               <div className="flex-1 overflow-y-auto divide-y divide-border-custom">
                 {activeStudents.map((student) => {
                   const hasChat = chatMessages[student.id];
-                  const lastMsg = hasChat ? hasChat[hasChat.length - 1]?.text : 'Sem mensagens...';
+                  const lastMsg =
+                    hasChat && hasChat.length ? hasChat[hasChat.length - 1]?.body : 'Sem mensagens...';
                   const isSelected = selectedChatStudent?.id === student.id;
                   
                   return (
@@ -792,23 +788,26 @@ export default function ProfessorDashboard() {
                   {/* Dialogue Messages */}
                   <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-black/5">
                     {(chatMessages[selectedChatStudent.id] || []).map((msg) => {
-                      const isMe = msg.sender === 'teacher';
+                      const isMe = msg.fromUserId === myUserId;
+                      const time = msg.sentAt
+                        ? new Date(msg.sentAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                        : '';
                       return (
                         <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                          <div 
+                          <div
                             className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs shadow-sm leading-relaxed ${
-                              isMe 
-                                ? 'text-accent' 
+                              isMe
+                                ? 'text-accent'
                                 : 'bg-black/35 text-text-main border border-border-custom'
                             }`}
                             style={isMe ? { backgroundColor: brand.colors.primary, color: brand.colors.accent } : {}}
                           >
-                            <p>{msg.text}</p>
-                            <span 
+                            <p>{msg.body}</p>
+                            <span
                               className="text-[8px] text-right mt-1.5 block opacity-60"
                               style={{ color: isMe ? brand.colors.accent : brand.colors.textSecondary }}
                             >
-                              {msg.time}
+                              {time}
                             </span>
                           </div>
                         </div>
