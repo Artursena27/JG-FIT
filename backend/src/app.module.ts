@@ -13,6 +13,9 @@ import { ExercisesModule } from './exercises/exercises.module';
 import { WorkoutsModule } from './workouts/workouts.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { EvolutionModule } from './evolution/evolution.module';
+import { LogsModule } from './workout-logs/logs.module';
+import { ChatModule } from './chat/chat.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -28,6 +31,9 @@ import { EvolutionModule } from './evolution/evolution.module';
     WorkoutsModule,
     ScheduleModule,
     EvolutionModule,
+    LogsModule,
+    ChatModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

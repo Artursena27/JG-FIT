@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useBrand } from '@/context/BrandContext';
 import Logo from '@/components/Logo';
 import { supabase, API_URL } from '@/lib/supabaseClient';
+import PeriodizationBuilder from '@/components/PeriodizationBuilder';
+import PersonasPanel from '@/components/PersonasPanel';
 
 import { 
   Users, 
@@ -140,28 +142,33 @@ export default function ProfessorDashboard() {
   const [newStudentGoal, setNewStudentGoal] = useState('Hipertrofia');
   const [newStudentFreq, setNewStudentFreq] = useState('5');
   
-  // Live Persona Engine output
-  const [personas, setPersonas] = useState<any[]>([]);
-  const [isComputingPersonas, setIsComputingPersonas] = useState(false);
+  // Live Persona Engine output (movido para PersonasPanel)
 
   // Periodization Editor State
   const [selectedWorkoutTemplate, setSelectedWorkoutTemplate] = useState('ABCDE Standard');
   const [periodizationSuccess, setPeriodizationSuccess] = useState(false);
 
   // Chat State
-  const [selectedChatStudent, setSelectedChatStudent] = useState<Student | null>(initialStudents[0]);
-  const [chatMessages, setChatMessages] = useState<Record<number, any[]>>({
-    1: [
-      { id: 1, sender: 'teacher', text: 'Fala, João! Vi seu feedback do último treino. Como sentiu o ombro na elevação lateral?', time: 'Ontem 09:30' },
-      { id: 2, sender: 'student', text: 'E aí, mestre! Sentiu um pouco no começo, mas depois que aqueci bem melhorou. Mantive a carga de 10kg.', time: 'Ontem 10:15' },
-      { id: 3, sender: 'teacher', text: 'Boa! Próximo treino vamos focar mais no aquecimento do manguito. Hoje é dia de costas e bíceps, foca na amplitude!', time: 'Hoje 09:30' }
-    ],
-    2: [
-      { id: 1, sender: 'student', text: 'Professor, posso trocar o agachamento livre por leg press hoje? Estou com um leve desconforto na lombar.', time: 'Hoje 08:00' },
-      { id: 2, sender: 'teacher', text: 'Pode sim, Pedro. Faça no Leg Press 45º e controle bem a amplitude. Evite travar os joelhos no final.', time: 'Hoje 08:15' }
-    ]
-  });
+  const [selectedChatStudent, setSelectedChatStudent] = useState<ApiStudent | null>(null);
+  const [chatMessages, setChatMessages] = useState<Record<string, any[]>>({});
   const [chatInput, setChatInput] = useState('');
+
+  // Fetch chat for selected student
+  useEffect(() => {
+    if (!selectedChatStudent) return;
+    const fetchChat = async () => {
+      try {
+        const res = await authedFetch(`/api/chat/${selectedChatStudent.id}`);
+        if (res.ok) {
+          const msgs = await res.json();
+          setChatMessages(prev => ({ ...prev, [selectedChatStudent.id]: msgs }));
+        }
+      } catch (e) {
+        console.error('Failed to fetch chat', e);
+      }
+    };
+    fetchChat();
+  }, [selectedChatStudent]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -222,73 +229,7 @@ export default function ProfessorDashboard() {
     }
   };
 
-  // Live calculation of Personas based on form input
-  useEffect(() => {
-    if (!newStudentAge || !newStudentWeight || !newStudentHeight) {
-      setPersonas([]);
-      return;
-    }
-    
-    setIsComputingPersonas(true);
-    const timer = setTimeout(() => {
-      // Simulating similarity logic
-      // Compare to Pedro (18, Hipertrofia, 72kg, 1.78m), Gabriel (20, Hipertrofia, 68kg, 1.74m), Matheus (22, Hipertrofia, 75kg, 1.82m)
-      const inputAge = parseInt(newStudentAge);
-      const inputWeight = parseFloat(newStudentWeight);
-      const inputHeight = parseFloat(newStudentHeight);
-      
-      const results = [
-        { 
-          id: 2, 
-          name: 'Pedro Ramos', 
-          match: 92, 
-          age: 18, 
-          weight: 72, 
-          height: 1.78, 
-          goal: 'Hipertrofia', 
-          strategy: 'Periodização ABCDE (Volume Moderado)',
-          explanation: 'Apresentou 27% mais ganho de massa magra com volume de 16-20 séries semanais por grupamento. Responde melhor a repetições na faixa de 10-12.' 
-        },
-        { 
-          id: 3, 
-          name: 'Gabriel Santos', 
-          match: 87, 
-          age: 20, 
-          weight: 68, 
-          height: 1.74, 
-          goal: 'Hipertrofia', 
-          strategy: 'Periodização ABC (Treino Híbrido)',
-          explanation: 'Adesão fantástica a treinos de 45 minutos. Evoluiu bem com cargas progressivas focadas em multiarticulares.' 
-        },
-        { 
-          id: 4, 
-          name: 'Matheus Costa', 
-          match: 84, 
-          age: 22, 
-          weight: 75, 
-          height: 1.82, 
-          goal: 'Hipertrofia', 
-          strategy: 'Periodização ABCD (Alta Intensidade)',
-          explanation: 'Teve excelente resposta com técnicas avançadas (Rest-Pause, Drop-set) nas últimas séries.' 
-        }
-      ];
-
-      // Alter scores slightly based on inputs to simulate calculation
-      const calculated = results.map(p => {
-        const ageDiff = Math.abs(p.age - inputAge);
-        const weightDiff = Math.abs(p.weight - inputWeight);
-        const heightDiff = Math.abs(p.height - inputHeight);
-        const penalty = (ageDiff * 1) + (weightDiff * 1.5) + (heightDiff * 10);
-        const finalMatch = Math.max(50, Math.min(98, p.match - Math.round(penalty)));
-        return { ...p, match: finalMatch };
-      }).sort((a, b) => b.match - a.match);
-
-      setPersonas(calculated);
-      setIsComputingPersonas(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [newStudentAge, newStudentWeight, newStudentHeight, newStudentGoal]);
+  // A lógica de cálculo de personas foi movida para PersonasPanel
 
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -318,7 +259,7 @@ export default function ProfessorDashboard() {
     setShowAddForm(false);
   };
 
-  const handleSendChatMessage = (e: React.FormEvent) => {
+  const handleSendChatMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || !selectedChatStudent) return;
 
@@ -326,7 +267,7 @@ export default function ProfessorDashboard() {
     const currentMsgs = chatMessages[studentId] || [];
     
     const newMsg = {
-      id: currentMsgs.length + 1,
+      id: Date.now(),
       sender: 'teacher',
       text: chatInput,
       time: 'Agora'
@@ -336,7 +277,19 @@ export default function ProfessorDashboard() {
       ...chatMessages,
       [studentId]: [...currentMsgs, newMsg]
     });
+    
+    const msgText = chatInput;
     setChatInput('');
+
+    try {
+      await authedFetch(`/api/chat/${studentId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: msgText })
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const filteredStudents = students.filter(s => 
@@ -443,10 +396,10 @@ export default function ProfessorDashboard() {
               </div>
 
               <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-sm">
-                <span className="text-xs text-text-sub uppercase font-bold tracking-wider">Consultas IA</span>
+                <span className="text-xs text-text-sub uppercase font-bold tracking-wider">Alunos Inativos</span>
                 <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-black" style={{ color: brand.colors.primary }}>v1</span>
-                  <span className="text-[10px] text-text-sub">Motor de Personas</span>
+                  <span className="text-3xl font-black text-red-400">0</span>
+                  <span className="text-[10px] text-text-sub">Nesta semana</span>
                 </div>
               </div>
             </div>
@@ -479,42 +432,31 @@ export default function ProfessorDashboard() {
                 </div>
               </div>
 
-              {/* AI Assistant Alerts Panel */}
+              {/* Avisos Rápidos Panel */}
               <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-border-custom">
-                  <Sparkles className="w-5 h-5" style={{ color: brand.colors.primary }} />
-                  <span className="text-xs font-bold uppercase tracking-wider">Alertas da IA</span>
+                  <AlertCircle className="w-5 h-5 text-amber-400" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Avisos Rápidos</span>
                 </div>
 
                 <div className="space-y-3.5">
                   <div className="bg-black/20 p-3 rounded-xl border border-border-custom space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-[11px] text-white">Luis Lima (Pendente)</span>
-                      <span className="text-[9px] font-bold bg-primary/20 px-2 py-0.5 rounded" style={{ color: brand.colors.primary }}>92% Compatibilidade</span>
+                      <span className="font-extrabold text-[11px] text-white">Treino Vencendo</span>
+                      <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">Alerta</span>
                     </div>
                     <p className="text-[11px] text-text-sub leading-relaxed">
-                      Perfil compatível com Pedro Ramos. Sugerido aplicar periodização baseada em volume moderado e divisão ABCDE.
+                      O treino de 2 alunos vence em menos de 3 dias. Revise a periodização na aba correspondente.
                     </p>
-                    <button 
-                      onClick={() => {
-                        setSelectedWorkoutTemplate('ABCDE Standard');
-                        setActiveTab('periodization');
-                      }}
-                      className="text-[10px] font-bold flex items-center gap-1 hover:underline cursor-pointer"
-                      style={{ color: brand.colors.primary }}
-                    >
-                      Ver Periodização Sugerida
-                      <ArrowRight className="w-3 h-3" />
-                    </button>
                   </div>
 
                   <div className="bg-black/20 p-3 rounded-xl border border-border-custom space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-[11px] text-white">Gabriel Santos</span>
-                      <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">Alerta Volume</span>
+                      <span className="font-extrabold text-[11px] text-white">Faltas Recorrentes</span>
+                      <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded">Atenção</span>
                     </div>
                     <p className="text-[11px] text-text-sub leading-relaxed">
-                      Evolução de peso estagnada há 3 semanas. IA recomenda recalcular cargas ou aplicar semana de Deload.
+                      1 aluno não registra conclusão de treinos há mais de 10 dias. Considere enviar uma mensagem no Chat.
                     </p>
                   </div>
                 </div>
@@ -758,6 +700,10 @@ export default function ProfessorDashboard() {
                         Prescrever
                       </button>
                     </div>
+                    
+                    <div className="pt-4 border-t border-border-custom">
+                      <PersonasPanel studentId={selectedStudent.id} />
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-12 text-text-sub text-xs">
@@ -772,121 +718,7 @@ export default function ProfessorDashboard() {
         {/* Tab 3: PERIODIZATION */}
         {activeTab === 'periodization' && (
           <div className="space-y-6 animate-fade-in">
-            <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h3 className="font-bold text-base">Prescrição & Montagem de Ficha</h3>
-                <p className="text-xs text-text-sub mt-0.5">Monte periodizações semanais com auxílio de modelos inteligentes.</p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-text-sub font-semibold">Modelo:</span>
-                <select 
-                  value={selectedWorkoutTemplate}
-                  onChange={(e) => setSelectedWorkoutTemplate(e.target.value)}
-                  className="bg-black/30 border border-border-custom rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-primary"
-                >
-                  <option value="ABCDE Standard">ABCDE Standard (Hipertrofia Foco)</option>
-                  <option value="ABC Iniciante">ABC Iniciante (Geral)</option>
-                  <option value="Deload Semanal">Deload Semanal (Recuperação)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* Weekly Periodization Builder */}
-              <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-sm lg:col-span-2 space-y-4">
-                <span className="text-xs font-bold text-text-sub uppercase tracking-wider block">Estrutura da Semana</span>
-                
-                <div className="space-y-3">
-                  {[
-                    { day: 'Segunda-feira', type: 'Treino A', target: 'Peito e Tríceps', exercises: 5 },
-                    { day: 'Terça-feira', type: 'Cardio', target: 'Cardio Livre (30-40 min)', exercises: 1 },
-                    { day: 'Quarta-feira', type: 'Treino B', target: 'Costas e Bíceps', exercises: 5 },
-                    { day: 'Quinta-feira', type: 'Descanso', target: 'Recuperação Ativa', exercises: 0 },
-                    { day: 'Sexta-feira', type: 'Treino C', target: 'Pernas Completo', exercises: 6 },
-                    { day: 'Sábado-feira', type: 'Cardio', target: 'Corrida/Funcional', exercises: 1 },
-                    { day: 'Domingo-feira', type: 'Descanso', target: 'Recuperação Passiva', exercises: 0 },
-                  ].map((d, idx) => (
-                    <div key={idx} className="bg-black/25 border border-border-custom rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                      <div>
-                        <span className="font-extrabold text-white">{d.day}</span>
-                        <div className="flex gap-2 items-center mt-1 text-text-sub">
-                          <span className="px-1.5 py-0.5 rounded bg-white/5 font-semibold text-[10px]">{d.type}</span>
-                          <span>{d.target}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <span className="text-text-sub">{d.exercises} exercícios</span>
-                        <button 
-                          className="px-2.5 py-1 rounded border border-border-custom hover:border-white/10 hover:bg-white/5 font-bold cursor-pointer"
-                        >
-                          Editar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-4 border-t border-border-custom flex justify-end gap-3">
-                  <button 
-                    onClick={() => {
-                      setPeriodizationSuccess(true);
-                      setTimeout(() => setPeriodizationSuccess(false), 3000);
-                    }}
-                    className="py-3 px-6 font-bold rounded-xl text-xs transition-all hover:scale-102 active:scale-98 cursor-pointer shadow-md"
-                    style={{ backgroundColor: brand.colors.primary, color: brand.colors.accent }}
-                  >
-                    Salvar e Enviar Ficha
-                  </button>
-                </div>
-
-                {periodizationSuccess && (
-                  <div className="p-3 bg-green-500/10 border border-green-500/20 text-green-400 text-xs rounded-xl text-center font-bold">
-                    ✓ Periodização enviada ao aplicativo do aluno!
-                  </div>
-                )}
-              </div>
-
-              {/* Template details / catalogue */}
-              <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-sm h-fit space-y-4">
-                <span className="text-xs font-bold text-text-sub uppercase tracking-wider block">Catálogo de Exercícios</span>
-                
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-text-sub" />
-                  <input 
-                    type="text" 
-                    placeholder="Filtrar por grupo muscular..."
-                    className="w-full pl-9 pr-4 py-2 bg-black/35 border border-border-custom rounded-xl focus:outline-none text-[11px]"
-                  />
-                </div>
-
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                  {[
-                    { name: 'Supino Reto com Barra', cat: 'Peitoral' },
-                    { name: 'Puxada no Pulldown', cat: 'Dorsais' },
-                    { name: 'Agachamento Livre', cat: 'Quadríceps' },
-                    { name: 'Elevação Lateral Halter', cat: 'Deltoides' },
-                    { name: 'Rosca Direta Barra W', cat: 'Bíceps' },
-                    { name: 'Tríceps Corda Polia', cat: 'Tríceps' },
-                  ].map((ex, idx) => (
-                    <div key={idx} className="p-2.5 bg-black/20 hover:bg-black/45 border border-border-custom rounded-xl flex items-center justify-between text-xs transition-colors">
-                      <div>
-                        <span className="font-semibold text-white">{ex.name}</span>
-                        <span className="text-[10px] text-text-sub block mt-0.5">{ex.cat}</span>
-                      </div>
-                      <button 
-                        className="p-1 rounded bg-primary/15 hover:bg-primary/25 text-primary cursor-pointer transition-colors"
-                        style={{ color: brand.colors.primary }}
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <PeriodizationBuilder studentId={selectedStudent?.id} />
           </div>
         )}
 
@@ -899,7 +731,7 @@ export default function ProfessorDashboard() {
                 <span className="text-[10px] font-bold text-text-sub uppercase tracking-wider block">Conversas</span>
               </div>
               <div className="flex-1 overflow-y-auto divide-y divide-border-custom">
-                {students.map((student) => {
+                {activeStudents.map((student) => {
                   const hasChat = chatMessages[student.id];
                   const lastMsg = hasChat ? hasChat[hasChat.length - 1]?.text : 'Sem mensagens...';
                   const isSelected = selectedChatStudent?.id === student.id;
@@ -1131,60 +963,12 @@ export default function ProfessorDashboard() {
             </form>
 
             {/* Persona IA Right Side */}
-            <div className="w-full lg:w-96 bg-black/30 p-6 flex flex-col overflow-y-auto max-h-[45vh] lg:max-h-full">
-              <div className="flex items-center gap-2 border-b border-border-custom pb-3 mb-4">
-                <Cpu className="w-5 h-5" style={{ color: brand.colors.primary }} />
-                <div>
-                  <h4 className="font-extrabold text-xs uppercase leading-none">Motor de Personas v1</h4>
-                  <span className="text-[9px] text-text-sub font-semibold tracking-wider block mt-1">INTELIGÊNCIA COLETIVA ATIVA</span>
-                </div>
-              </div>
-
-              {isComputingPersonas ? (
-                <div className="flex-1 flex flex-col items-center justify-center py-10 text-text-sub text-center gap-2">
-                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" style={{ borderColor: brand.colors.primary, borderTopColor: 'transparent' }} />
-                  <span className="text-[10px] font-semibold uppercase tracking-wider">Analisando histórico de alunos...</span>
-                </div>
-              ) : personas.length > 0 ? (
-                <div className="space-y-4 flex-1">
-                  <span className="text-[10px] font-bold text-text-sub uppercase tracking-wider block">Personas Similares Encontradas</span>
-                  
-                  <div className="space-y-3">
-                    {personas.map((persona, idx) => (
-                      <div key={idx} className="bg-bg-card border border-border-custom rounded-xl p-3.5 space-y-2 shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <span className="font-extrabold text-xs text-white">{persona.name}</span>
-                          <span className="text-[9px] font-black bg-primary/20 px-2 py-0.5 rounded" style={{ color: brand.colors.primary }}>
-                            {persona.match}% compatível
-                          </span>
-                        </div>
-                        
-                        <div className="text-[10px] text-text-sub space-y-1.5">
-                          <p><span className="font-semibold text-white/90">Estratégia bem sucedida:</span> {persona.strategy}</p>
-                          <p className="leading-relaxed bg-black/25 p-2 rounded-lg border border-border-custom">{persona.explanation}</p>
-                        </div>
-
-                        <button 
-                          type="button"
-                          onClick={() => {
-                            setSelectedWorkoutTemplate(persona.strategy.includes('ABCDE') ? 'ABCDE Standard' : 'ABC Iniciante');
-                            // Simulating applying the template
-                            alert(`Modelo de Periodização Sugerido por IA (${persona.strategy}) aplicado com sucesso!`);
-                          }}
-                          className="w-full text-center text-[10px] font-bold py-1.5 border border-border-custom hover:border-primary rounded-lg transition-colors cursor-pointer"
-                        >
-                          Aplicar Divisão Sugerida
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center py-16 text-center text-text-sub text-xs">
-                  <AlertCircle className="w-8 h-8 opacity-30 mb-2" />
-                  Preencha os dados de Idade, Peso e Altura do formulário para o Motor de Personas identificar similaridades.
-                </div>
-              )}
+            <div className="w-full lg:w-96 bg-black/30 p-6 flex flex-col justify-center items-center text-center text-text-sub border-l border-border-custom">
+              <Cpu className="w-8 h-8 opacity-20 mb-3" />
+              <p className="text-xs">
+                O Motor de Personas foi movido para o painel de detalhes do aluno.<br/><br/>
+                Após cadastrar e aprovar o aluno, você poderá visualizar suas compatibilidades com a base de dados em tempo real.
+              </p>
             </div>
           </div>
         </div>

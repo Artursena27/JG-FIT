@@ -85,8 +85,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  student      Student?
-  chatMessages ChatMessage[] @relation("ChatFromUser")
+  student       Student?
+  chatMessages  ChatMessage[]  @relation("ChatFromUser")
+  notifications Notification[]
 }
 
 model Student {
@@ -142,6 +143,9 @@ model Student {
   workoutLogs     WorkoutLog[]
   chatMessages    ChatMessage[]
   personaMatch    PersonaMatch?
+  dietPlan        DietPlan?
+  subscription    Subscription?
+  notifications   Notification[]
 
   @@index([tenantId])
 }
@@ -326,4 +330,73 @@ model PersonaMatch {
   computedAt DateTime @default(now())
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------------------------------------------------------------
+// Round 3 — Nutrição, Assinaturas e Notificações
+// ----------------------------------------------------------------------------
+
+enum SubscriptionStatus {
+  ACTIVE
+  OVERDUE
+  CANCELED
+}
+
+enum NotificationType {
+  GERAL
+  TREINO
+  PAGAMENTO
+  AVALIACAO
+  MENSAGEM
+}
+
+// Plano alimentar / metas de nutrição do aluno (1 por aluno).
+model DietPlan {
+  id          String   @id @default(uuid())
+  studentId   String   @unique
+  calories    Int?
+  protein     Float? // gramas
+  carbs       Float? // gramas
+  fat         Float? // gramas
+  waterLiters Float?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+// Assinatura / mensalidade do aluno (1 por aluno).
+model Subscription {
+  id        String             @id @default(uuid())
+  studentId String             @unique
+  status    SubscriptionStatus @default(ACTIVE)
+  planName  String?
+  dueDate   DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+// Notificação destinada a um usuário (User) e/ou aluno (Student).
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String?
+  studentId String?
+  title     String
+  message   String
+  type      NotificationType @default(GERAL)
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([studentId])
 }

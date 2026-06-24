@@ -59,13 +59,21 @@ export default function AlunoDashboard() {
   const { brand } = useBrand();
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [isMounted, setIsMounted] = useState(false);
-  const [selectedDay, setSelectedDay] = useState(2); // Quarta (index 2)
-  const [workout, setWorkout] = useState(initialWorkout);
+  const [selectedDay, setSelectedDay] = useState<number>(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1); // Auto-select today
+  
+  // Real data states
+  const [workouts, setWorkouts] = useState<any[]>([]);
+  const [schedule, setSchedule] = useState<any[]>([]);
+  const [assessments, setAssessments] = useState<any[]>([]);
+  const [measurements, setMeasurements] = useState<any[]>([]);
+  
+  const [activeWorkoutExercises, setActiveWorkoutExercises] = useState<any[]>([]);
+  
   const [timerSec, setTimerSec] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   
   // Chat state
-  const [messages, setMessages] = useState(mockChatMessages);
+  const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   
   // Hold-to-finish checkin states
@@ -76,30 +84,73 @@ export default function AlunoDashboard() {
   // Video modal states
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
 
+  // Evolution Photo Upload states
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    // Mock local preview
+    setPhotoPreview(URL.createObjectURL(file));
+    setIsUploadingPhoto(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/students/me/photos`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: formData
+      });
+    } catch (err) {
+      console.error('Failed to upload', err);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
   const [student, setStudent] = useState<StudentData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setIsMounted(true);
-    const fetchStudent = async () => {
+    const fetchData = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
         const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
-        const res = await fetch(`${API_URL}/api/students/me`, {
-          headers: { Authorization: `Bearer ${session.access_token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setStudent(data);
-        }
+        const headers = { Authorization: `Bearer ${session.access_token}` };
+        
+        const [resStudent, resWorkouts, resSchedule, resAssessments, resMeasurements, resChat] = await Promise.all([
+          fetch(`${API_URL}/api/students/me`, { headers }),
+          fetch(`${API_URL}/api/students/me/workouts`, { headers }),
+          fetch(`${API_URL}/api/students/me/schedule`, { headers }),
+          fetch(`${API_URL}/api/students/me/assessments`, { headers }),
+          fetch(`${API_URL}/api/students/me/measurements`, { headers }),
+          fetch(`${API_URL}/api/chat/me`, { headers })
+        ]);
+
+        if (resStudent.ok) setStudent(await resStudent.json());
+        if (resWorkouts.ok) setWorkouts(await resWorkouts.json());
+        if (resSchedule.ok) setSchedule(await resSchedule.json());
+        if (resAssessments.ok) setAssessments(await resAssessments.json());
+        if (resMeasurements.ok) setMeasurements(await resMeasurements.json());
+        if (resChat.ok) setMessages(await resChat.json());
+        
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchStudent();
+    fetchData();
   }, []);
 
   // Timer runner
@@ -113,6 +164,36 @@ export default function AlunoDashboard() {
     return () => clearInterval(interval);
   }, [isTimerRunning]);
 
+  const handleWorkoutComplete = async () => {
+    setWorkoutCompleted(true);
+    setIsHolding(false);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+      const w = schedule.find(x => x.dayOfWeek === ['SEGUNDA', 'TERCA', 'QUARTA', 'QUINTA', 'SEXTA', 'SABADO', 'DOMINGO'][selectedDay])?.workoutId;
+      
+      await fetch(`${API_URL}/api/students/me/logs`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}` 
+        },
+        body: JSON.stringify({
+          workoutId: w,
+          durationSec: timerSec,
+          exercises: activeWorkoutExercises.map(ex => ({
+            exerciseId: ex.id,
+            loadKg: ex.currentLoad,
+            completedSets: ex.sets
+          }))
+        })
+      });
+    } catch (err) {
+      console.error('Failed to log workout', err);
+    }
+  };
+
   // Hold-to-complete logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -121,47 +202,57 @@ export default function AlunoDashboard() {
         setHoldProgress((p) => {
           if (p >= 100) {
             clearInterval(interval);
-            setWorkoutCompleted(true);
-            setIsHolding(false);
             return 100;
           }
           return p + 5;
         });
       }, 50);
-    } else if (!isHolding && holdProgress > 0) {
+    } else if (!isHolding && holdProgress > 0 && holdProgress < 100) {
       setHoldProgress(0);
     }
     return () => clearInterval(interval);
   }, [isHolding, holdProgress]);
 
+  useEffect(() => {
+    if (holdProgress === 100 && !workoutCompleted) {
+      handleWorkoutComplete();
+    }
+  }, [holdProgress, workoutCompleted]);
+
   const handleToggleDone = (id: number) => {
-    setWorkout(workout.map(ex => ex.id === id ? { ...ex, done: !ex.done } : ex));
+    setActiveWorkoutExercises(prev => prev.map(ex => ex.id === id ? { ...ex, done: !ex.done } : ex));
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
-    const msg = {
-      id: messages.length + 1,
+    
+    const tempMsg = {
+      id: Date.now(),
       sender: 'student',
       text: newMessage,
       time: 'Agora'
     };
-    setMessages([...messages, msg]);
+    setMessages(prev => [...prev, tempMsg]);
+    const msgText = newMessage;
     setNewMessage('');
 
-    // Mock teacher auto-reply
-    setTimeout(() => {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: prev.length + 1,
-          sender: 'teacher',
-          text: 'Show! Continue registrando as cargas que estou acompanhando tudo por aqui.',
-          time: 'Agora'
-        }
-      ]);
-    }, 1500);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+      
+      await fetch(`${API_URL}/api/chat/me`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}` 
+        },
+        body: JSON.stringify({ text: msgText })
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const formatTime = (totalSeconds: number) => {
@@ -170,25 +261,68 @@ export default function AlunoDashboard() {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   };
 
-  // Evolution data
-  const weightData = [
-    { name: 'Jan', peso: 75.2 },
-    { name: 'Fev', peso: 74.8 },
-    { name: 'Mar', peso: 74.3 },
-    { name: 'Abr', peso: 73.9 },
-    { name: 'Mai', peso: 73.5 },
-    { name: 'Jun', peso: 72.8 },
-  ];
+  // Evolution data - Real
+  const weightData = measurements
+    .filter(m => m.weightKg)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .map(m => {
+      const d = new Date(m.date);
+      return {
+        name: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}`,
+        peso: m.weightKg
+      };
+    });
 
-  const weekSchedule = [
-    { day: 'Seg', type: 'Treino A', title: 'Peito e Ombros', status: 'Concluído' },
-    { day: 'Ter', type: 'Cardio', title: 'Corrida 30 min', status: 'Concluído' },
-    { day: 'Qua', type: 'Treino B', title: 'Costas e Bíceps', status: 'Hoje' },
-    { day: 'Qui', type: 'Descanso', title: 'Recuperação', status: 'Pendente' },
-    { day: 'Sex', type: 'Treino C', title: 'Pernas', status: 'Pendente' },
-    { day: 'Sáb', type: 'Cardio', title: 'Funcional', status: 'Pendente' },
-    { day: 'Dom', type: 'Descanso', title: 'Recuperação', status: 'Pendente' },
-  ];
+  const latestAssessment = assessments.length > 0 
+    ? [...assessments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0] 
+    : null;
+
+  const circumferencesList = latestAssessment && latestAssessment.circumferences 
+    ? Object.keys(latestAssessment.circumferences).map(key => ({
+        label: key,
+        val: latestAssessment.circumferences[key],
+        prev: '--',
+        unit: 'cm'
+      }))
+    : [];
+
+  // Schedule mapping
+  const daysOrder = ['SEGUNDA', 'TERCA', 'QUARTA', 'QUINTA', 'SEXTA', 'SABADO', 'DOMINGO'];
+  const dayNames = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+  const todayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+
+  const weekSchedule = daysOrder.map((day, idx) => {
+    const s = schedule.find(x => x.dayOfWeek === day) || { type: 'DESCANSO' };
+    const w = s.workoutId ? workouts.find(x => x.id === s.workoutId) : null;
+    return {
+      day: dayNames[idx],
+      type: s.type === 'TREINO' ? `Treino ${w ? w.label : ''}` : s.type === 'CARDIO' ? 'Cardio' : 'Descanso',
+      title: s.type === 'TREINO' ? (w ? w.name : 'Treino') : s.notes || 'Recuperação',
+      status: idx < todayIdx ? 'Concluído' : idx === todayIdx ? 'Hoje' : 'Pendente',
+      rawType: s.type,
+      workout: w
+    };
+  });
+
+  // When selected day changes, update active workout
+  useEffect(() => {
+    const w = weekSchedule[selectedDay]?.workout;
+    if (w && w.exercises) {
+      setActiveWorkoutExercises(w.exercises.map((ex: any, i: number) => ({
+        id: i,
+        name: ex.exercise?.name || 'Exercício',
+        sets: ex.sets,
+        reps: ex.reps,
+        currentLoad: ex.loadKg || 0,
+        prevLoad: ex.loadKg || 0,
+        video: ex.exercise?.videoUrl || null,
+        done: false,
+        notes: ex.notes
+      })));
+    } else {
+      setActiveWorkoutExercises([]);
+    }
+  }, [selectedDay, schedule, workouts]);
 
   return (
     <div className="flex flex-col min-h-screen bg-bg-main text-text-main pb-20 select-none">
@@ -266,7 +400,6 @@ export default function AlunoDashboard() {
 
             {/* Week Panel */}
             <div className="space-y-3 relative mt-6">
-              <div className="absolute -top-3 right-0 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase z-10">Dados de Exemplo</div>
               <h4 className="text-xs font-bold tracking-wider text-text-sub uppercase">Cronograma da Semana</h4>
               <div className="grid grid-cols-7 gap-1.5">
                 {weekSchedule.map((item, idx) => {
@@ -364,7 +497,6 @@ export default function AlunoDashboard() {
         {/* Tab 2: WORKOUT */}
         {activeTab === 'workout' && (
           <div className="space-y-5 animate-fade-in relative pt-4">
-            <div className="absolute top-0 right-0 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase z-10">Dados de Exemplo</div>
             {/* Workout Tracker & Stats */}
             <div className="bg-bg-card border border-border-custom rounded-2xl p-4 flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
@@ -372,8 +504,8 @@ export default function AlunoDashboard() {
                   <Dumbbell className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-white">Treino B — Costas e Bíceps</h3>
-                  <p className="text-[11px] text-text-sub mt-0.5">5 Exercícios · Foco em Puxar</p>
+                  <h3 className="font-bold text-sm text-white">{weekSchedule[selectedDay]?.type || 'Treino'} — {weekSchedule[selectedDay]?.title || 'Sem Treino'}</h3>
+                  <p className="text-[11px] text-text-sub mt-0.5">{activeWorkoutExercises.length} Exercícios</p>
                 </div>
               </div>
 
@@ -393,7 +525,12 @@ export default function AlunoDashboard() {
 
             {/* Exercise List */}
             <div className="space-y-3">
-              {workout.map((ex) => (
+              {activeWorkoutExercises.length === 0 && (
+                <div className="text-center py-10 text-text-sub text-xs bg-bg-card border border-border-custom rounded-2xl">
+                  Nenhum treino atribuído para este dia.
+                </div>
+              )}
+              {activeWorkoutExercises.map((ex) => (
                 <div 
                   key={ex.id}
                   className={`bg-bg-card border rounded-2xl p-4 transition-all duration-300 flex flex-col gap-3.5 shadow-sm ${
@@ -447,7 +584,7 @@ export default function AlunoDashboard() {
                           value={ex.currentLoad}
                           onChange={(e) => {
                             const val = parseFloat(e.target.value) || 0;
-                            setWorkout(workout.map(item => item.id === ex.id ? { ...item, currentLoad: val } : item));
+                            setActiveWorkoutExercises(prev => prev.map(item => item.id === ex.id ? { ...item, currentLoad: val } : item));
                           }}
                           className="w-12 bg-transparent text-right font-black focus:outline-none focus:text-primary text-white"
                           style={{ color: ex.done ? brand.colors.textSecondary : 'inherit' }}
@@ -496,12 +633,11 @@ export default function AlunoDashboard() {
         {/* Tab 3: EVOLUTION */}
         {activeTab === 'evolution' && (
           <div className="space-y-5 animate-fade-in relative pt-4">
-            <div className="absolute top-0 right-0 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase z-10">Dados de Exemplo</div>
             {/* Weight Chart (Recharts) */}
             <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-md">
               <span className="text-xs font-bold text-text-sub uppercase tracking-wider block mb-4">Evolução do Peso</span>
               <div className="h-48 w-full text-xs">
-                {isMounted && (
+                {isMounted && weightData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={weightData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#182235" />
@@ -525,6 +661,10 @@ export default function AlunoDashboard() {
                       />
                     </LineChart>
                   </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-text-sub text-xs">
+                    Nenhum dado de peso registrado.
+                  </div>
                 )}
               </div>
             </div>
@@ -534,13 +674,7 @@ export default function AlunoDashboard() {
               <span className="text-xs font-bold text-text-sub uppercase tracking-wider block mb-4">Medidas Corporais</span>
               
               <div className="space-y-2.5">
-                {[
-                  { label: 'Tórax (Peitoral)', val: 98, prev: 96, unit: 'cm' },
-                  { label: 'Braço Direito', val: 36.5, prev: 35.8, unit: 'cm' },
-                  { label: 'Braço Esquerdo', val: 36.2, prev: 35.5, unit: 'cm' },
-                  { label: 'Cintura (Abdômen)', val: 82, prev: 84, unit: 'cm' },
-                  { label: 'Quadril', val: 94, prev: 95, unit: 'cm' },
-                ].map((item, idx) => (
+                {circumferencesList.length > 0 ? circumferencesList.map((item, idx) => (
                   <div key={idx} className="flex items-center justify-between py-2 border-b border-border-custom last:border-b-0 text-sm">
                     <span className="text-text-sub">{item.label}</span>
                     <div className="flex items-center gap-3">
@@ -548,7 +682,9 @@ export default function AlunoDashboard() {
                       <span className="font-extrabold text-white">{item.val}{item.unit}</span>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div className="text-center py-4 text-text-sub text-xs">Nenhuma medida corporal registrada.</div>
+                )}
               </div>
             </div>
 
@@ -556,29 +692,41 @@ export default function AlunoDashboard() {
             <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-md space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-text-sub uppercase tracking-wider">Fotos de Progresso</span>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleUploadPhoto}
+                />
                 <button 
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border-custom bg-black/25 text-[10px] font-bold text-white hover:border-white/15 transition-all cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border-custom bg-black/25 text-[10px] font-bold text-white hover:border-white/15 transition-all cursor-pointer disabled:opacity-50"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Enviar Foto
+                  {isUploadingPhoto ? 'Enviando...' : 'Enviar Foto'}
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 relative overflow-hidden">
                 <div className="relative aspect-[3/4] bg-slate-900 border border-border-custom rounded-xl overflow-hidden flex flex-col justify-end p-2.5">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_0%,transparent_100%)] flex items-center justify-center">
                     <User className="w-16 h-16 text-text-sub opacity-20" />
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 text-center">
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 text-center z-10">
                     <span className="text-[10px] font-black text-white/90 uppercase tracking-widest bg-black/40 px-2 py-1 rounded border border-white/5">ANTERIOR</span>
                   </div>
                 </div>
 
                 <div className="relative aspect-[3/4] bg-slate-900 border border-border-custom rounded-xl overflow-hidden flex flex-col justify-end p-2.5">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_0%,transparent_100%)] flex items-center justify-center">
-                    <User className="w-16 h-16 text-primary opacity-30" style={{ color: brand.colors.primary }} />
-                  </div>
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 text-center">
+                  {photoPreview ? (
+                    <img src={photoPreview} alt="Foto Atual" className="absolute inset-0 w-full h-full object-cover z-0" />
+                  ) : (
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_0%,transparent_100%)] flex items-center justify-center">
+                      <User className="w-16 h-16 text-primary opacity-30" style={{ color: brand.colors.primary }} />
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 text-center z-10">
                     <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded bg-primary/20 border border-primary/20" style={{ color: brand.colors.primary }}>ATUAL</span>
                   </div>
                 </div>
