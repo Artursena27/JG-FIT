@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase, API_URL } from '@/lib/supabaseClient';
 import { useBrand } from '@/context/BrandContext';
 import { Cpu, AlertCircle, Sparkles, Star, ChevronDown, Copy, Dumbbell } from 'lucide-react';
@@ -253,7 +254,16 @@ export default function PersonasPanel({ studentId, onWorkoutCopied }: PersonasPa
                   </button>
 
                   {/* Conteúdo expandido: dados + treinos + copiar */}
-                  {open && (
+                  <AnimatePresence>
+                    {open && (
+                      <motion.div
+                        key="exp"
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        style={{ overflow: 'hidden' }}
+                      >
                     <div className="p-3 space-y-3 bg-black/10 border-t border-border-custom">
                       {loadingMatch ? (
                         <div className="flex items-center gap-2 text-text-sub text-[11px] py-2">
@@ -331,7 +341,9 @@ export default function PersonasPanel({ studentId, onWorkoutCopied }: PersonasPa
                         </>
                       )}
                     </div>
-                  )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}

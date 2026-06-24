@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useBrand } from '@/context/BrandContext';
 import Logo from '@/components/Logo';
 import { supabase } from '@/lib/supabaseClient';
@@ -37,6 +38,7 @@ import {
 type ActiveTab = 'home' | 'workout' | 'evolution' | 'chat';
 
 interface StudentData {
+  id: string;
   name: string;
   goal: string;
   weightKg: number;
@@ -78,6 +80,7 @@ export default function AlunoDashboard() {
   // Chat state
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const chRef = useRef<any>(null);
   
   // Hold-to-finish checkin states
   const [holdProgress, setHoldProgress] = useState(0);
@@ -164,6 +167,34 @@ export default function AlunoDashboard() {
     };
     fetchData();
   }, []);
+
+  // Realtime chat (broadcast) — recarrega a conversa quando chega nova mensagem
+  useEffect(() => {
+    const studentId = student?.id;
+    if (!studentId) return;
+
+    const refetchChat = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+        const res = await fetch(`${API_URL}/api/chat/me`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+        if (res.ok) setMessages(await res.json());
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    const ch = supabase.channel(`chat:${studentId}`);
+    ch.on('broadcast', { event: 'new-message' }, () => { refetchChat(); });
+    ch.subscribe();
+    chRef.current = ch;
+
+    return () => {
+      supabase.removeChannel(ch);
+      chRef.current = null;
+    };
+  }, [student?.id]);
 
   // Timer runner
   useEffect(() => {
@@ -283,6 +314,8 @@ export default function AlunoDashboard() {
         },
         body: JSON.stringify({ body: msgText })
       });
+      // Notifica os outros participantes via broadcast para refazerem o fetch.
+      chRef.current?.send({ type: 'broadcast', event: 'new-message', payload: {} });
       const res = await fetch(`${API_URL}/api/chat/me`, { headers: { Authorization: `Bearer ${session.access_token}` } });
       if (res.ok) setMessages(await res.json());
     } catch (err) {
@@ -427,10 +460,18 @@ export default function AlunoDashboard() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-lg mx-auto w-full px-4 pt-5 relative z-10">
-        
+        <AnimatePresence mode="wait">
+
         {/* Tab 1: HOME */}
         {activeTab === 'home' && (
-          <div className="space-y-5 animate-fade-in">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-5"
+          >
             {/* Student Welcoming Info */}
             <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-lg relative overflow-hidden">
               <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
@@ -555,12 +596,19 @@ export default function AlunoDashboard() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Tab 2: WORKOUT */}
         {activeTab === 'workout' && (
-          <div className="space-y-5 animate-fade-in relative pt-4">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-5 relative pt-4"
+          >
             {/* Workout Tracker & Stats */}
             <div className="bg-bg-card border border-border-custom rounded-2xl p-4 flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
@@ -691,12 +739,19 @@ export default function AlunoDashboard() {
                 <p className="text-xs text-text-sub">Muito bom! Os dados de cargas e tempo foram salvos e enviados ao seu Personal.</p>
               </div>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* Tab 3: EVOLUTION */}
         {activeTab === 'evolution' && (
-          <div className="space-y-5 animate-fade-in relative pt-4">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-5 relative pt-4"
+          >
             {/* Weight Chart (Recharts) */}
             <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-md">
               <span className="text-xs font-bold text-text-sub uppercase tracking-wider block mb-4">Evolução do Peso</span>
@@ -796,12 +851,19 @@ export default function AlunoDashboard() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Tab 4: CHAT */}
         {activeTab === 'chat' && (
-          <div className="bg-bg-card border border-border-custom rounded-2xl h-[500px] flex flex-col overflow-hidden shadow-md animate-fade-in relative">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="bg-bg-card border border-border-custom rounded-2xl h-[500px] flex flex-col overflow-hidden shadow-md relative"
+          >
             <div className="absolute top-2 right-2 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase z-10">Dados de Exemplo</div>
             {/* Chat header */}
             <div className="px-4 py-3 border-b border-border-custom bg-black/20 flex items-center gap-3">
@@ -862,8 +924,9 @@ export default function AlunoDashboard() {
                 <Send className="w-3.5 h-3.5" />
               </button>
             </form>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </main>
 
       {/* Expandable video modal */}

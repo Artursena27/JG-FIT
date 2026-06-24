@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { supabase, API_URL } from '@/lib/supabaseClient';
 import { useBrand } from '@/context/BrandContext';
@@ -393,9 +394,10 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
               </div>
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {gamification.badges.map((b) => (
-                  <span
+                  <motion.span
                     key={b.key}
                     title={b.description}
+                    whileHover={{ scale: 1.08, rotate: -2 }}
                     className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg border"
                     style={
                       b.earned
@@ -405,7 +407,7 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
                   >
                     <Award className="w-3 h-3" />
                     {b.label}
-                  </span>
+                  </motion.span>
                 ))}
               </div>
             </>
@@ -492,13 +494,22 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
         </div>
 
         {/* Detalhe do dia selecionado */}
-        {openDay &&
-          (() => {
-            const item = schedule.find((s) => s.dayOfWeek === openDay);
-            const type = item?.type ?? 'DESCANSO';
-            const w = item?.workoutId ? workoutById(item.workoutId) : null;
-            return (
-              <div className="bg-black/25 border border-border-custom rounded-xl p-4 mt-1 space-y-2 animate-fade-in">
+        <AnimatePresence>
+          {openDay &&
+            (() => {
+              const item = schedule.find((s) => s.dayOfWeek === openDay);
+              const type = item?.type ?? 'DESCANSO';
+              const w = item?.workoutId ? workoutById(item.workoutId) : null;
+              return (
+                <motion.div
+                  key={openDay}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ overflow: 'hidden' }}
+                  className="bg-black/25 border border-border-custom rounded-xl p-4 mt-1 space-y-2"
+                >
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-sm text-white">{DAY_FULL[openDay]}</span>
                   {type === 'TREINO' && w && (
@@ -541,9 +552,10 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
                 )}
 
                 {item?.notes && <p className="text-[11px] text-text-sub italic">Obs.: {item.notes}</p>}
-              </div>
-            );
-          })()}
+                </motion.div>
+              );
+            })()}
+        </AnimatePresence>
       </div>
 
       {/* Treinos atuais (leitura) */}

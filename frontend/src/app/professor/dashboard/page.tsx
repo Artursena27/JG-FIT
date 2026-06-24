@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useBrand } from '@/context/BrandContext';
 import { supabase, API_URL } from '@/lib/supabaseClient';
@@ -129,6 +130,7 @@ export default function ProfessorDashboard() {
   const [chatMessages, setChatMessages] = useState<Record<string, any[]>>({});
   const [chatInput, setChatInput] = useState('');
   const [myUserId, setMyUserId] = useState('');
+  const chRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const authedFetch = useCallback(async (path: string, options: RequestInit = {}) => {
     const {
@@ -221,6 +223,31 @@ export default function ProfessorDashboard() {
     }
   };
 
+  // Realtime: assina o canal broadcast da conversa aberta
+  useEffect(() => {
+    if (!selectedChatStudent) return;
+    const studentId = selectedChatStudent.id;
+    const ch = supabase.channel(`chat:${studentId}`);
+    ch.on('broadcast', { event: 'new-message' }, async () => {
+      try {
+        const res = await authedFetch(`/api/chat/${studentId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setChatMessages((prev) => ({ ...prev, [studentId]: data }));
+        }
+        await authedFetch(`/api/chat/${studentId}/read`, { method: 'POST' });
+      } catch {
+        /* silencioso */
+      }
+    });
+    ch.subscribe();
+    chRef.current = ch;
+    return () => {
+      supabase.removeChannel(ch);
+      chRef.current = null;
+    };
+  }, [selectedChatStudent, authedFetch]);
+
   const handleDecision = async (id: string, action: 'approve' | 'reject') => {
     setActingId(id);
     try {
@@ -252,6 +279,7 @@ export default function ProfessorDashboard() {
         const data = await res.json();
         setChatMessages((prev) => ({ ...prev, [studentId]: data }));
       }
+      chRef.current?.send({ type: 'broadcast', event: 'new-message', payload: {} });
     } catch (err) {
       console.error(err);
     }
@@ -324,9 +352,17 @@ export default function ProfessorDashboard() {
       </header>
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 pt-6">
+        <AnimatePresence mode="wait">
         {/* ====================== DASHBOARD ====================== */}
         {activeTab === 'dashboard' && (
-          <div className="space-y-6 animate-fade-in">
+          <motion.div
+            key="dashboard"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-6"
+          >
             {/* KPIs */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-sm">
@@ -454,7 +490,7 @@ export default function ProfessorDashboard() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* ====================== ALUNOS — detalhe ====================== */}
@@ -474,7 +510,14 @@ export default function ProfessorDashboard() {
 
         {/* ====================== ALUNOS — lista ====================== */}
         {activeTab === 'students' && !detailStudent && (
-          <div className="space-y-6 animate-fade-in">
+          <motion.div
+            key="students"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-6"
+          >
             <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center bg-bg-card border border-border-custom p-4 rounded-2xl">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-3 w-4 h-4 text-text-sub" />
@@ -608,12 +651,19 @@ export default function ProfessorDashboard() {
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* ====================== CHAT ====================== */}
         {activeTab === 'chat' && (
-          <div className="bg-bg-card border border-border-custom rounded-2xl h-[530px] flex overflow-hidden shadow-md animate-fade-in">
+          <motion.div
+            key="chat"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="bg-bg-card border border-border-custom rounded-2xl h-[530px] flex overflow-hidden shadow-md"
+          >
             <div className="w-1/3 border-r border-border-custom flex flex-col bg-black/10">
               <div className="p-3 border-b border-border-custom">
                 <span className="text-[10px] font-bold text-text-sub uppercase tracking-wider block">Conversas</span>
@@ -722,8 +772,9 @@ export default function ProfessorDashboard() {
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </main>
 
       {/* Modal: Convidar aluno */}
