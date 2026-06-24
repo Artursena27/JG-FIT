@@ -57,6 +57,12 @@ export class StudentsService {
     });
   }
 
+  async getById(id: string) {
+    const student = await this.prisma.student.findUnique({ where: { id } });
+    if (!student) throw new NotFoundException('Aluno não encontrado');
+    return student;
+  }
+
   async approve(id: string) {
     const student = await this.prisma.student.findUnique({
       where: { id },

@@ -49,6 +49,13 @@ export class StudentsController {
     return this.studentsService.getPending();
   }
 
+  // IMPORTANTE: declarar depois de /pending para o literal nao cair no :id
+  @Get('professor/students/:id')
+  @Roles(Role.PROFESSOR)
+  getById(@Param('id') id: string) {
+    return this.studentsService.getById(id);
+  }
+
   @Post('professor/students/:id/approve')
   @Roles(Role.PROFESSOR)
   approve(@Param('id') id: string) {
