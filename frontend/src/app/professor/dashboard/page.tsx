@@ -6,6 +6,7 @@ import Logo from '@/components/Logo';
 import { supabase, API_URL } from '@/lib/supabaseClient';
 import PeriodizationBuilder from '@/components/PeriodizationBuilder';
 import PersonasPanel from '@/components/PersonasPanel';
+import StudentDetail from '@/components/StudentDetail';
 
 import { 
   Users, 
@@ -131,6 +132,8 @@ export default function ProfessorDashboard() {
 
   // Selected student details view
   const [selectedStudent, setSelectedStudent] = useState<ApiStudent | null>(null);
+  // Aluno aberto em tela cheia (detalhe completo)
+  const [detailStudent, setDetailStudent] = useState<ApiStudent | null>(null);
   
   // "New Student" modal/form state
   const [showAddForm, setShowAddForm] = useState(false);
@@ -465,8 +468,20 @@ export default function ProfessorDashboard() {
           </div>
         )}
 
-        {/* Tab 2: STUDENTS */}
-        {activeTab === 'students' && (
+        {/* Tab 2: STUDENTS — detalhe completo do aluno (ao clicar) */}
+        {activeTab === 'students' && detailStudent && (
+          <StudentDetail
+            student={detailStudent}
+            onBack={() => setDetailStudent(null)}
+            onChat={(s) => {
+              setSelectedChatStudent(s as ApiStudent);
+              setActiveTab('chat');
+            }}
+          />
+        )}
+
+        {/* Tab 2: STUDENTS — lista */}
+        {activeTab === 'students' && !detailStudent && (
           <div className="space-y-6 animate-fade-in">
             {/* Action Bar */}
             <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center bg-bg-card border border-border-custom p-4 rounded-2xl">
@@ -578,7 +593,7 @@ export default function ProfessorDashboard() {
                       .map((student) => (
                         <div
                           key={student.id}
-                          onClick={() => setSelectedStudent(student)}
+                          onClick={() => { setSelectedStudent(student); setDetailStudent(student); }}
                           className={`p-4 flex items-center justify-between hover:bg-white/2 transition-colors cursor-pointer ${
                             selectedStudent?.id === student.id ? 'bg-primary/3' : ''
                           }`}
