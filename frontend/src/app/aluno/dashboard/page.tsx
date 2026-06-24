@@ -33,6 +33,14 @@ import {
 
 type ActiveTab = 'home' | 'workout' | 'evolution' | 'chat';
 
+interface StudentData {
+  name: string;
+  goal: string;
+  weightKg: number;
+  heightCm: number;
+  weeklyFrequency: number;
+}
+
 const initialWorkout = [
   { id: 1, name: 'Puxada Alta (Pulldown)', sets: 4, reps: '10-12', currentLoad: 55, prevLoad: 50, video: 'https://assets.mixkit.co/videos/preview/mixkit-man-working-out-in-a-gym-4848-large.mp4', done: false },
   { id: 2, name: 'Remada Curvada Pronada', sets: 4, reps: '10', currentLoad: 45, prevLoad: 40, video: 'https://assets.mixkit.co/videos/preview/mixkit-man-working-out-in-a-gym-4848-large.mp4', done: false },
@@ -68,8 +76,30 @@ export default function AlunoDashboard() {
   // Video modal states
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
 
+  const [student, setStudent] = useState<StudentData | null>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     setIsMounted(true);
+    const fetchStudent = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+        const res = await fetch(`${API_URL}/api/students/me`, {
+          headers: { Authorization: `Bearer ${session.access_token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStudent(data);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStudent();
   }, []);
 
   // Timer runner
@@ -162,6 +192,14 @@ export default function AlunoDashboard() {
 
   return (
     <div className="flex flex-col min-h-screen bg-bg-main text-text-main pb-20 select-none">
+      {loading && (
+        <div className="fixed inset-0 bg-bg-main z-50 flex items-center justify-center">
+          <div className="flex flex-col items-center animate-pulse">
+            <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin mb-4" style={{ borderColor: brand.colors.primary, borderTopColor: 'transparent' }}></div>
+            <p className="text-sm font-semibold">Carregando dados...</p>
+          </div>
+        </div>
+      )}
       {/* Real Watermark Logo */}
       <div className="absolute inset-0 flex items-center justify-center opacity-[0.015] select-none pointer-events-none z-0">
         <img src="/logo.jpg" alt="Logo Watermark" className="w-[50vmin] h-[50vmin] object-contain" />
@@ -202,18 +240,18 @@ export default function AlunoDashboard() {
               </div>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center border border-white/10 text-white font-bold text-lg">
-                  JS
+                  {student ? student.name.substring(0, 2).toUpperCase() : 'JS'}
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold">Olá, João Silva 👋</h3>
-                  <p className="text-xs text-text-sub mt-0.5">Seu objetivo: <span className="font-semibold text-white">Hipertrofia</span></p>
+                  <h3 className="text-lg font-bold">Olá, {student ? student.name.split(' ')[0] : 'Aluno'} 👋</h3>
+                  <p className="text-xs text-text-sub mt-0.5">Seu objetivo: <span className="font-semibold text-white">{student ? student.goal : 'Carregando...'}</span></p>
                 </div>
               </div>
               
               <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-border-custom text-center">
                 <div>
                   <span className="text-xs text-text-sub block">Peso Atual</span>
-                  <span className="text-lg font-extrabold text-white mt-1 block">72.8 kg</span>
+                  <span className="text-lg font-extrabold text-white mt-1 block">{student ? `${student.weightKg} kg` : '--'}</span>
                 </div>
                 <div>
                   <span className="text-xs text-text-sub block">Assiduidade</span>
@@ -221,13 +259,14 @@ export default function AlunoDashboard() {
                 </div>
                 <div>
                   <span className="text-xs text-text-sub block">Frequência</span>
-                  <span className="text-lg font-extrabold text-white mt-1 block">5x / sem</span>
+                  <span className="text-lg font-extrabold text-white mt-1 block">{student ? `${student.weeklyFrequency}x / sem` : '--'}</span>
                 </div>
               </div>
             </div>
 
             {/* Week Panel */}
-            <div className="space-y-3">
+            <div className="space-y-3 relative mt-6">
+              <div className="absolute -top-3 right-0 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase z-10">Dados de Exemplo</div>
               <h4 className="text-xs font-bold tracking-wider text-text-sub uppercase">Cronograma da Semana</h4>
               <div className="grid grid-cols-7 gap-1.5">
                 {weekSchedule.map((item, idx) => {
@@ -293,7 +332,8 @@ export default function AlunoDashboard() {
             </div>
 
             {/* hydration and tips card */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 relative mt-4">
+              <div className="absolute -top-3 right-0 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase z-10">Dados de Exemplo</div>
               <div className="bg-bg-card border border-border-custom rounded-2xl p-4 flex flex-col justify-between shadow-md">
                 <span className="text-xs font-bold text-text-sub uppercase">Meta de Água</span>
                 <div className="my-4 text-center">
@@ -323,7 +363,8 @@ export default function AlunoDashboard() {
 
         {/* Tab 2: WORKOUT */}
         {activeTab === 'workout' && (
-          <div className="space-y-5 animate-fade-in">
+          <div className="space-y-5 animate-fade-in relative pt-4">
+            <div className="absolute top-0 right-0 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase z-10">Dados de Exemplo</div>
             {/* Workout Tracker & Stats */}
             <div className="bg-bg-card border border-border-custom rounded-2xl p-4 flex items-center justify-between shadow-md">
               <div className="flex items-center gap-3">
@@ -454,7 +495,8 @@ export default function AlunoDashboard() {
 
         {/* Tab 3: EVOLUTION */}
         {activeTab === 'evolution' && (
-          <div className="space-y-5 animate-fade-in">
+          <div className="space-y-5 animate-fade-in relative pt-4">
+            <div className="absolute top-0 right-0 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase z-10">Dados de Exemplo</div>
             {/* Weight Chart (Recharts) */}
             <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-md">
               <span className="text-xs font-bold text-text-sub uppercase tracking-wider block mb-4">Evolução do Peso</span>
@@ -547,7 +589,8 @@ export default function AlunoDashboard() {
 
         {/* Tab 4: CHAT */}
         {activeTab === 'chat' && (
-          <div className="bg-bg-card border border-border-custom rounded-2xl h-[500px] flex flex-col overflow-hidden shadow-md animate-fade-in">
+          <div className="bg-bg-card border border-border-custom rounded-2xl h-[500px] flex flex-col overflow-hidden shadow-md animate-fade-in relative">
+            <div className="absolute top-2 right-2 bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase z-10">Dados de Exemplo</div>
             {/* Chat header */}
             <div className="px-4 py-3 border-b border-border-custom bg-black/20 flex items-center gap-3">
               <img src="/personal-photo.jpg" alt="João Guilherme" className="w-8 h-8 rounded-full object-cover border border-primary/20" />
