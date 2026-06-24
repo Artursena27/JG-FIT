@@ -154,6 +154,8 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [openDay, setOpenDay] = useState<string | null>(null);
+  // Incrementa para forçar o PeriodizationBuilder a recarregar as fichas (ex.: após copiar treino de uma persona).
+  const [wkRefresh, setWkRefresh] = useState(0);
 
   // Edição da mensalidade
   const [subStatus, setSubStatus] = useState<Subscription['status']>('ACTIVE');
@@ -616,11 +618,11 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
           <Dumbbell className="w-5 h-5" style={{ color: c.primary }} />
           <span className="text-xs font-bold uppercase tracking-wider">Prescrição do treino</span>
         </div>
-        <PeriodizationBuilder studentId={student.id} />
+        <PeriodizationBuilder studentId={student.id} reloadKey={wkRefresh} />
       </div>
 
-      {/* Personas da IA */}
-      <PersonasPanel studentId={student.id} />
+      {/* Personas da IA — clicar num match abre os dados/treinos e permite copiar a ficha */}
+      <PersonasPanel studentId={student.id} onWorkoutCopied={() => setWkRefresh((k) => k + 1)} />
     </div>
   );
 }

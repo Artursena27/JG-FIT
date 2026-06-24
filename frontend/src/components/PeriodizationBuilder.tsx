@@ -40,6 +40,8 @@ interface ApiWorkout {
 
 interface PeriodizationBuilderProps {
   studentId: string | undefined;
+  /** Muda este valor para forçar recarregar as fichas (ex.: após copiar treino). */
+  reloadKey?: number;
 }
 
 const DAYS = ['SEGUNDA', 'TERCA', 'QUARTA', 'QUINTA', 'SEXTA', 'SABADO', 'DOMINGO'];
@@ -53,7 +55,7 @@ const DAY_LABEL: Record<string, string> = {
   DOMINGO: 'Domingo',
 };
 
-export default function PeriodizationBuilder({ studentId }: PeriodizationBuilderProps) {
+export default function PeriodizationBuilder({ studentId, reloadKey }: PeriodizationBuilderProps) {
   const { brand } = useBrand();
   const c = brand.colors;
 
@@ -141,7 +143,8 @@ export default function PeriodizationBuilder({ studentId }: PeriodizationBuilder
   useEffect(() => {
     fetchWorkouts();
     fetchSchedule();
-  }, [fetchWorkouts, fetchSchedule]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchWorkouts, fetchSchedule, reloadKey]);
 
   const handleAddExercise = (ex: ApiExercise) => {
     setSelectedExercises((prev) => [
