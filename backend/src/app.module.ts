@@ -9,6 +9,10 @@ import { AuthModule } from './auth/auth.module';
 import { StudentsModule } from './students/students.module';
 import { MailModule } from './mail/mail.module';
 import { PersonasModule } from './personas/personas.module';
+import { ExercisesModule } from './exercises/exercises.module';
+import { WorkoutsModule } from './workouts/workouts.module';
+import { ScheduleModule } from './schedule/schedule.module';
+import { EvolutionModule } from './evolution/evolution.module';
 
 @Module({
   imports: [
@@ -20,6 +24,10 @@ import { PersonasModule } from './personas/personas.module';
     StudentsModule,
     MailModule,
     PersonasModule,
+    ExercisesModule,
+    WorkoutsModule,
+    ScheduleModule,
+    EvolutionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
