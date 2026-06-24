@@ -16,6 +16,10 @@ import { EvolutionModule } from './evolution/evolution.module';
 import { LogsModule } from './workout-logs/logs.module';
 import { ChatModule } from './chat/chat.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { NutritionModule } from './nutrition/nutrition.module';
+import { GamificationModule } from './gamification/gamification.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -34,6 +38,10 @@ import { DashboardModule } from './dashboard/dashboard.module';
     LogsModule,
     ChatModule,
     DashboardModule,
+    NutritionModule,
+    GamificationModule,
+    SubscriptionsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
