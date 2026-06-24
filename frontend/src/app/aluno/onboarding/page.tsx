@@ -151,7 +151,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-main text-text-main flex flex-col items-center py-10 px-6">
+    <div className="min-h-screen bg-bg-main text-text-main flex flex-col items-center py-8 sm:py-10 px-4 sm:px-6">
       {renderLockup()}
 
       {step < 5 && (
@@ -182,7 +182,7 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      <div className="w-full max-w-xl bg-bg-card border border-border-custom p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+      <div className="w-full max-w-xl bg-bg-card border border-border-custom p-6 sm:p-8 rounded-3xl shadow-2xl relative overflow-hidden">
         
         {error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl text-center">
@@ -198,8 +198,9 @@ export default function OnboardingPage() {
             
             <div className="space-y-6">
               <div>
-                <label className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2 block">Data de Nascimento</label>
+                <label htmlFor="birthdate" className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2 block">Data de Nascimento</label>
                 <input 
+                  id="birthdate"
                   type="date" 
                   value={formData.birthdate}
                   onChange={(e) => handleChange('birthdate', e.target.value)}
@@ -237,9 +238,11 @@ export default function OnboardingPage() {
             
             <div className="space-y-6">
               <div>
-                <label className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2 block">Altura (cm)</label>
+                <label htmlFor="heightCm" className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2 block">Altura (cm)</label>
                 <input 
+                  id="heightCm"
                   type="number" 
+                  inputMode="numeric"
                   placeholder="Ex: 175"
                   value={formData.heightCm}
                   onChange={(e) => handleChange('heightCm', e.target.value)}
@@ -248,9 +251,11 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2 block">Peso Atual (kg)</label>
+                <label htmlFor="weightKg" className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2 block">Peso Atual (kg)</label>
                 <input 
+                  id="weightKg"
                   type="number" 
+                  inputMode="decimal"
                   placeholder="Ex: 72.5"
                   step="0.1"
                   value={formData.weightKg}
@@ -308,13 +313,14 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2 block">Dias por semana (Frequência)</label>
+                <label htmlFor="weeklyFrequency" className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2 block">Dias por semana (Frequência)</label>
                 <input 
+                  id="weeklyFrequency"
                   type="range" 
                   min="1" max="7" 
                   value={formData.weeklyFrequency}
                   onChange={(e) => handleChange('weeklyFrequency', e.target.value)}
-                  className="w-full accent-primary"
+                  className="w-full accent-primary cursor-pointer"
                 />
                 <div className="text-center font-bold text-primary text-xl mt-2">{formData.weeklyFrequency} dias</div>
               </div>
@@ -330,8 +336,9 @@ export default function OnboardingPage() {
             
             <div className="space-y-6">
               <div>
-                <label className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2 block">Lesões ou Dores crônicas?</label>
+                <label htmlFor="injuries" className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2 block">Lesões ou Dores crônicas?</label>
                 <textarea 
+                  id="injuries"
                   placeholder="Ex: Dor no joelho direito, Hérnia de disco L4-L5..."
                   value={formData.injuries}
                   onChange={(e) => handleChange('injuries', e.target.value)}
@@ -340,8 +347,9 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2 block">Condições Médicas?</label>
+                <label htmlFor="healthConditions" className="text-xs font-semibold text-text-sub uppercase tracking-wider mb-2 block">Condições Médicas?</label>
                 <textarea 
+                  id="healthConditions"
                   placeholder="Ex: Hipertensão, Asma, Diabetes..."
                   value={formData.healthConditions}
                   onChange={(e) => handleChange('healthConditions', e.target.value)}
