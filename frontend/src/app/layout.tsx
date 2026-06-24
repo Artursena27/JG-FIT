@@ -3,6 +3,7 @@ import { Montserrat, Lexend_Deca, Parisienne, Poppins, Geist_Mono } from "next/f
 import "./globals.css";
 import { BrandProvider } from "@/context/BrandContext";
 import { Toaster } from "sonner";
+import PWARegister from "@/components/PWARegister";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -70,6 +71,7 @@ export default function RootLayout({
             },
           }}
         />
+        <PWARegister />
       </body>
     </html>
   );
