@@ -105,6 +105,16 @@ const DAY_SHORT: Record<string, string> = {
   DOMINGO: 'DOM',
 };
 
+const DAY_FULL: Record<string, string> = {
+  SEGUNDA: 'Segunda-feira',
+  TERCA: 'Terça-feira',
+  QUARTA: 'Quarta-feira',
+  QUINTA: 'Quinta-feira',
+  SEXTA: 'Sexta-feira',
+  SABADO: 'Sábado',
+  DOMINGO: 'Domingo',
+};
+
 function ageFrom(birthdate: string | null): number | null {
   if (!birthdate) return null;
   const d = new Date(birthdate);
@@ -143,6 +153,7 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
+  const [openDay, setOpenDay] = useState<string | null>(null);
 
   // Edição da mensalidade
   const [subStatus, setSubStatus] = useState<Subscription['status']>('ACTIVE');
@@ -440,11 +451,12 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
         </div>
       </div>
 
-      {/* Agenda atual da semana (leitura) */}
+      {/* Agenda atual da semana — clique num dia para ver o treino completo */}
       <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-sm space-y-3">
         <div className="flex items-center gap-2 border-b border-border-custom pb-3">
           <CalendarDays className="w-5 h-5" style={{ color: c.primary }} />
           <span className="text-xs font-bold uppercase tracking-wider">Semana atual</span>
+          <span className="text-[10px] text-text-sub ml-auto">Clique num dia para ver o treino</span>
         </div>
         <div className="grid grid-cols-7 gap-2">
           {DAYS.map((day) => {
@@ -452,17 +464,20 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
             const type = item?.type ?? 'DESCANSO';
             const w = item?.workoutId ? workoutById(item.workoutId) : null;
             const isTraining = type === 'TREINO';
+            const isOpen = openDay === day;
             return (
-              <div
+              <button
                 key={day}
-                className="rounded-xl p-2 border text-center"
-                style={
-                  isTraining
+                onClick={() => setOpenDay(isOpen ? null : day)}
+                className="rounded-xl p-2 border text-center cursor-pointer transition-transform hover:-translate-y-0.5"
+                style={{
+                  outline: isOpen ? `2px solid ${c.primary}` : 'none',
+                  ...(isTraining
                     ? { borderColor: `${c.primary}55`, backgroundColor: `${c.primary}12` }
                     : type === 'CARDIO'
                       ? { borderColor: 'rgba(96,165,250,0.4)', backgroundColor: 'rgba(96,165,250,0.08)' }
-                      : { borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(0,0,0,0.2)' }
-                }
+                      : { borderColor: 'rgba(255,255,255,0.06)', backgroundColor: 'rgba(0,0,0,0.2)' }),
+                }}
               >
                 <div className="text-[9px] font-bold text-text-sub">{DAY_SHORT[day]}</div>
                 <div
@@ -471,10 +486,64 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
                 >
                   {isTraining ? w?.label ?? 'Treino' : type === 'CARDIO' ? 'Cardio' : 'Folga'}
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
+
+        {/* Detalhe do dia selecionado */}
+        {openDay &&
+          (() => {
+            const item = schedule.find((s) => s.dayOfWeek === openDay);
+            const type = item?.type ?? 'DESCANSO';
+            const w = item?.workoutId ? workoutById(item.workoutId) : null;
+            return (
+              <div className="bg-black/25 border border-border-custom rounded-xl p-4 mt-1 space-y-2 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm text-white">{DAY_FULL[openDay]}</span>
+                  {type === 'TREINO' && w && (
+                    <span
+                      className="text-[10px] font-black px-2 py-0.5 rounded"
+                      style={{ color: c.accent, backgroundColor: c.primary }}
+                    >
+                      Ficha {w.label ?? ''} · {w.name}
+                    </span>
+                  )}
+                </div>
+
+                {type === 'TREINO' ? (
+                  w ? (
+                    <ul className="divide-y divide-border-custom">
+                      {w.exercises.map((ex, i) => (
+                        <li key={ex.id} className="flex justify-between py-1.5 text-xs">
+                          <span className="text-white">
+                            {i + 1}. {ex.exercise.name}
+                            <span className="text-text-sub"> · {ex.exercise.muscleGroup ?? 'Geral'}</span>
+                          </span>
+                          <span className="text-text-sub shrink-0 ml-2">
+                            {ex.sets ?? '-'}x{ex.reps ?? '-'}
+                            {ex.loadKg ? ` · ${ex.loadKg}kg` : ''}
+                            {ex.restSec ? ` · ${ex.restSec}s` : ''}
+                          </span>
+                        </li>
+                      ))}
+                      {w.exercises.length === 0 && (
+                        <li className="py-2 text-xs text-text-sub">Esta ficha ainda não tem exercícios.</li>
+                      )}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-text-sub">Nenhuma ficha atribuída a este dia ainda.</p>
+                  )
+                ) : type === 'CARDIO' ? (
+                  <p className="text-xs" style={{ color: '#60a5fa' }}>Dia de cardio.</p>
+                ) : (
+                  <p className="text-xs text-text-sub">Dia de descanso.</p>
+                )}
+
+                {item?.notes && <p className="text-[11px] text-text-sub italic">Obs.: {item.notes}</p>}
+              </div>
+            );
+          })()}
       </div>
 
       {/* Treinos atuais (leitura) */}

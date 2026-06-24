@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Body,
@@ -67,6 +68,13 @@ export class WorkoutsController {
   @Roles(Role.PROFESSOR)
   update(@Param('id') id: string, @Body() data: UpdateWorkoutDto) {
     return this.workoutsService.update(id, data);
+  }
+
+  // Substitui a ficha inteira (escalares + exercicios) numa transacao.
+  @Put('workouts/:id')
+  @Roles(Role.PROFESSOR)
+  replace(@Param('id') id: string, @Body() data: CreateWorkoutDto) {
+    return this.workoutsService.replace(id, data);
   }
 
   @Delete('workouts/:id')

@@ -90,6 +90,38 @@ export class WorkoutsService {
     return this.prisma.workout.delete({ where: { id } });
   }
 
+  // Substitui a ficha inteira: atualiza escalares e recria os exercicios.
+  async replace(id: string, data: CreateWorkoutDto) {
+    await this.findOne(id);
+    const { exercises, ...scalars } = data;
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.workoutExercise.deleteMany({ where: { workoutId: id } });
+      return tx.workout.update({
+        where: { id },
+        data: {
+          ...scalars,
+          ...(exercises && exercises.length > 0
+            ? {
+                exercises: {
+                  create: exercises.map((ex: WorkoutExerciseDto) => ({
+                    exerciseId: ex.exerciseId,
+                    order: ex.order,
+                    sets: ex.sets,
+                    reps: ex.reps,
+                    loadKg: ex.loadKg,
+                    restSec: ex.restSec,
+                    notes: ex.notes,
+                  })),
+                },
+              }
+            : {}),
+        },
+        include: this.exercisesInclude,
+      });
+    });
+  }
+
   async findForUser(userId: string) {
     const student = await this.prisma.student.findUnique({ where: { userId } });
     if (!student) throw new NotFoundException('Aluno não encontrado');
