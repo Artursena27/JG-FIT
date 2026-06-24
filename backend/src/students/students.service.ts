@@ -42,8 +42,10 @@ export class StudentsService {
   }
 
   async getApproved() {
+    // Inclui APPROVED (aprovado, ainda fazendo onboarding) e ONBOARDED (ativo de fato),
+    // para o aluno recem-aprovado nao sumir da lista do professor.
     return this.prisma.student.findMany({
-      where: { status: 'ONBOARDED' },
+      where: { status: { in: ['APPROVED', 'ONBOARDED'] } },
       orderBy: { name: 'asc' },
     });
   }

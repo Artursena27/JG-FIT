@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useBrand } from '@/context/BrandContext';
 import Logo from '@/components/Logo';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, API_URL } from '@/lib/supabaseClient';
 
 import { 
   Users, 
@@ -60,6 +60,59 @@ const initialStudents: Student[] = [
   { id: 5, name: 'Lucas Pinho', age: 25, sex: 'M', weight: 88, height: 1.85, goal: 'Emagrecimento', frequency: 4, attendance: 92, status: 'Ativo', lastWorkout: 'Treino B (Costas) - Hoje' },
 ];
 
+// ---- Dados REAIS vindos do backend (aba Alunos) ----
+type ApiStatus = 'PENDING' | 'APPROVED' | 'ONBOARDED' | 'REJECTED';
+
+interface ApiStudent {
+  id: string;
+  name: string;
+  status: ApiStatus;
+  birthdate: string | null;
+  sex: 'MASCULINO' | 'FEMININO' | 'OUTRO' | null;
+  heightCm: number | null;
+  weightKg: number | null;
+  goal: string | null;
+  weeklyFrequency: number | null;
+  createdAt: string;
+}
+
+const STATUS_LABEL: Record<ApiStatus, string> = {
+  PENDING: 'Pendente',
+  APPROVED: 'Aguardando onboarding',
+  ONBOARDED: 'Ativo',
+  REJECTED: 'Rejeitado',
+};
+
+function ageFrom(birthdate: string | null): number | null {
+  if (!birthdate) return null;
+  const d = new Date(birthdate);
+  if (isNaN(d.getTime())) return null;
+  return Math.floor((Date.now() - d.getTime()) / 3.15576e10);
+}
+
+function titleCase(s: string | null): string {
+  if (!s) return '—';
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+function initials(name: string): string {
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+/** Resumo "23 anos · Hipertrofia" tolerante a campos faltando. */
+function studentSummary(s: ApiStudent): string {
+  const age = ageFrom(s.birthdate);
+  const parts: string[] = [];
+  if (age !== null) parts.push(`${age} anos`);
+  if (s.goal) parts.push(titleCase(s.goal));
+  return parts.length ? parts.join(' · ') : 'Perfil ainda não preenchido';
+}
+
 export default function ProfessorDashboard() {
   const { brand } = useBrand();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -67,8 +120,15 @@ export default function ProfessorDashboard() {
   const [students, setStudents] = useState<Student[]>(initialStudents);
   const [searchTerm, setSearchTerm] = useState('');
   
+  // ---- Dados reais de alunos (aba Alunos) ----
+  const [activeStudents, setActiveStudents] = useState<ApiStudent[]>([]);
+  const [pendingStudents, setPendingStudents] = useState<ApiStudent[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(true);
+  const [studentsError, setStudentsError] = useState('');
+  const [actingId, setActingId] = useState<string | null>(null);
+
   // Selected student details view
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<ApiStudent | null>(null);
   
   // "New Student" modal/form state
   const [showAddForm, setShowAddForm] = useState(false);
@@ -106,6 +166,61 @@ export default function ProfessorDashboard() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Chamada autenticada ao backend (injeta o JWT do Supabase).
+  const authedFetch = async (path: string, options: RequestInit = {}) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        ...(options.headers ?? {}),
+        Authorization: `Bearer ${session?.access_token ?? ''}`,
+      },
+    });
+  };
+
+  // Carrega alunos ativos + fila de pendentes do backend.
+  const loadStudents = async () => {
+    setLoadingStudents(true);
+    setStudentsError('');
+    try {
+      const [activeRes, pendingRes] = await Promise.all([
+        authedFetch('/api/professor/students'),
+        authedFetch('/api/professor/students/pending'),
+      ]);
+      if (!activeRes.ok || !pendingRes.ok) throw new Error('request failed');
+      setActiveStudents(await activeRes.json());
+      setPendingStudents(await pendingRes.json());
+    } catch {
+      setStudentsError('Não foi possível carregar os alunos. Tente novamente.');
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  useEffect(() => {
+    loadStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Aprova / rejeita um aluno da fila e recarrega as listas.
+  const handleDecision = async (id: string, action: 'approve' | 'reject') => {
+    setActingId(id);
+    try {
+      const res = await authedFetch(`/api/professor/students/${id}/${action}`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('request failed');
+      if (selectedStudent?.id === id) setSelectedStudent(null);
+      await loadStudents();
+    } catch {
+      setStudentsError('Não foi possível concluir a ação. Tente novamente.');
+    } finally {
+      setActingId(null);
+    }
+  };
 
   // Live calculation of Personas based on form input
   useEffect(() => {
@@ -299,8 +414,15 @@ export default function ProfessorDashboard() {
               <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-sm">
                 <span className="text-xs text-text-sub uppercase font-bold tracking-wider">Alunos Ativos</span>
                 <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-black">5</span>
-                  <span className="text-[10px] text-green-400 font-bold flex items-center">↑ 100%</span>
+                  <span className="text-3xl font-black">{activeStudents.length}</span>
+                  {pendingStudents.length > 0 && (
+                    <button
+                      onClick={() => setActiveTab('students')}
+                      className="text-[10px] text-amber-400 font-bold flex items-center cursor-pointer hover:underline"
+                    >
+                      {pendingStudents.length} na fila
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -427,49 +549,133 @@ export default function ProfessorDashboard() {
               </button>
             </div>
 
-            {/* List and Details Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              {/* Students List */}
-              <div className="bg-bg-card border border-border-custom rounded-2xl overflow-hidden shadow-sm lg:col-span-2">
-                <div className="px-5 py-4 border-b border-border-custom bg-black/10">
-                  <span className="text-xs font-bold text-text-sub uppercase tracking-wider">Lista de Alunos</span>
+            {/* Erro de carregamento */}
+            {studentsError && (
+              <div className="flex items-center justify-between gap-3 text-xs rounded-xl px-4 py-3 border border-red-500/25 bg-red-500/10 text-red-300">
+                <span>{studentsError}</span>
+                <button
+                  onClick={loadStudents}
+                  className="font-bold underline hover:no-underline cursor-pointer shrink-0"
+                >
+                  Tentar de novo
+                </button>
+              </div>
+            )}
+
+            {/* Fila de aprovação (pendentes) */}
+            {pendingStudents.length > 0 && (
+              <div className="bg-bg-card border border-amber-500/25 rounded-2xl overflow-hidden shadow-sm">
+                <div className="px-5 py-4 border-b border-border-custom bg-amber-500/5 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+                    Aguardando aprovação ({pendingStudents.length})
+                  </span>
                 </div>
-                
+
                 <div className="divide-y divide-border-custom">
-                  {filteredStudents.map((student) => (
-                    <div 
-                      key={student.id}
-                      onClick={() => setSelectedStudent(student)}
-                      className={`p-4 flex items-center justify-between hover:bg-white/2 transition-colors cursor-pointer ${
-                        selectedStudent?.id === student.id ? 'bg-primary/3' : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-800 border border-white/5 flex items-center justify-center font-bold text-sm">
-                          {student.name.split(' ').map(w => w[0]).join('')}
+                  {pendingStudents.map((student) => (
+                    <div key={student.id} className="p-4 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-slate-800 border border-white/5 flex items-center justify-center font-bold text-sm shrink-0">
+                          {initials(student.name)}
                         </div>
-                        <div>
-                          <h4 className="font-bold text-sm text-white">{student.name}</h4>
-                          <span className="text-xs text-text-sub">{student.age} anos · {student.goal}</span>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-sm text-white truncate">{student.name}</h4>
+                          <span className="text-xs text-text-sub">{studentSummary(student)}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-5">
-                        <div className="text-right hidden sm:block">
-                          <span className="text-[10px] text-text-sub uppercase block">Assiduidade</span>
-                          <span className="text-xs font-extrabold text-white mt-0.5 block">{student.attendance}%</span>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-text-sub" />
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => handleDecision(student.id, 'reject')}
+                          disabled={actingId === student.id}
+                          className="px-3 py-2 rounded-xl text-xs font-bold border border-border-custom text-text-sub hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          Rejeitar
+                        </button>
+                        <button
+                          onClick={() => handleDecision(student.id, 'approve')}
+                          disabled={actingId === student.id}
+                          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                          style={{ backgroundColor: brand.colors.primary, color: brand.colors.accent }}
+                        >
+                          {actingId === student.id ? (
+                            <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Check className="w-3.5 h-3.5" />
+                          )}
+                          Aprovar
+                        </button>
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
 
-                  {filteredStudents.length === 0 && (
-                    <div className="p-8 text-center text-text-sub text-xs">
-                      Nenhum aluno encontrado com este nome.
+            {/* List and Details Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+              {/* Students List */}
+              <div className="bg-bg-card border border-border-custom rounded-2xl overflow-hidden shadow-sm lg:col-span-2">
+                <div className="px-5 py-4 border-b border-border-custom bg-black/10">
+                  <span className="text-xs font-bold text-text-sub uppercase tracking-wider">
+                    Alunos ({activeStudents.length})
+                  </span>
+                </div>
+
+                <div className="divide-y divide-border-custom">
+                  {loadingStudents ? (
+                    <div className="p-8 flex items-center justify-center gap-2 text-text-sub text-xs">
+                      <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      Carregando alunos...
                     </div>
+                  ) : (
+                    activeStudents
+                      .filter((s) => s.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                      .map((student) => (
+                        <div
+                          key={student.id}
+                          onClick={() => setSelectedStudent(student)}
+                          className={`p-4 flex items-center justify-between hover:bg-white/2 transition-colors cursor-pointer ${
+                            selectedStudent?.id === student.id ? 'bg-primary/3' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-full bg-slate-800 border border-white/5 flex items-center justify-center font-bold text-sm shrink-0">
+                              {initials(student.name)}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-bold text-sm text-white truncate">{student.name}</h4>
+                              <span className="text-xs text-text-sub">{studentSummary(student)}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 shrink-0">
+                            <span
+                              className="text-[10px] font-bold px-2 py-0.5 rounded hidden sm:block"
+                              style={
+                                student.status === 'ONBOARDED'
+                                  ? { color: brand.colors.primary, backgroundColor: `${brand.colors.primary}1f` }
+                                  : { color: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.12)' }
+                              }
+                            >
+                              {STATUS_LABEL[student.status]}
+                            </span>
+                            <ChevronRight className="w-4 h-4 text-text-sub" />
+                          </div>
+                        </div>
+                      ))
                   )}
+
+                  {!loadingStudents &&
+                    activeStudents.filter((s) => s.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+                      <div className="p-8 text-center text-text-sub text-xs">
+                        {activeStudents.length === 0
+                          ? 'Nenhum aluno ativo ainda. Aprove alunos na fila acima.'
+                          : 'Nenhum aluno encontrado com este nome.'}
+                      </div>
+                    )}
                 </div>
               </div>
 
@@ -479,50 +685,68 @@ export default function ProfessorDashboard() {
                   <div className="space-y-5">
                     <div className="text-center space-y-2 pb-4 border-b border-border-custom">
                       <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-xl font-bold border border-white/5">
-                        {selectedStudent.name.split(' ').map(w => w[0]).join('')}
+                        {initials(selectedStudent.name)}
                       </div>
                       <h3 className="font-bold text-base">{selectedStudent.name}</h3>
-                      <p className="text-xs text-text-sub">{selectedStudent.age} anos · Objetivo: <span className="text-white font-semibold">{selectedStudent.goal}</span></p>
+                      <p className="text-xs text-text-sub">
+                        Objetivo: <span className="text-white font-semibold">{titleCase(selectedStudent.goal)}</span>
+                      </p>
+                      <span
+                        className="inline-block text-[10px] font-bold px-2 py-0.5 rounded"
+                        style={
+                          selectedStudent.status === 'ONBOARDED'
+                            ? { color: brand.colors.primary, backgroundColor: `${brand.colors.primary}1f` }
+                            : { color: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.12)' }
+                        }
+                      >
+                        {STATUS_LABEL[selectedStudent.status]}
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 text-center text-xs">
                       <div className="bg-black/20 p-3 rounded-xl border border-border-custom">
                         <span className="text-text-sub text-[10px] block">Peso Atual</span>
-                        <span className="font-extrabold text-white mt-1 block">{selectedStudent.weight} kg</span>
+                        <span className="font-extrabold text-white mt-1 block">
+                          {selectedStudent.weightKg ? `${selectedStudent.weightKg} kg` : '—'}
+                        </span>
                       </div>
                       <div className="bg-black/20 p-3 rounded-xl border border-border-custom">
                         <span className="text-text-sub text-[10px] block">Altura</span>
-                        <span className="font-extrabold text-white mt-1 block">{selectedStudent.height} m</span>
+                        <span className="font-extrabold text-white mt-1 block">
+                          {selectedStudent.heightCm ? `${selectedStudent.heightCm} cm` : '—'}
+                        </span>
                       </div>
                     </div>
 
                     <div className="space-y-3.5 pt-2">
                       <div className="text-xs space-y-1">
-                        <span className="text-text-sub block">Frequência Semanal:</span>
-                        <span className="font-semibold text-white block">{selectedStudent.frequency} vezes na semana</span>
+                        <span className="text-text-sub block">Idade:</span>
+                        <span className="font-semibold text-white block">
+                          {ageFrom(selectedStudent.birthdate) !== null
+                            ? `${ageFrom(selectedStudent.birthdate)} anos`
+                            : 'Não informado'}
+                        </span>
                       </div>
 
                       <div className="text-xs space-y-1">
-                        <span className="text-text-sub block">Último treino registrado:</span>
-                        <span className="font-semibold text-white block flex items-center gap-1.5">
-                          <Check className="w-3.5 h-3.5 text-green-400" />
-                          {selectedStudent.lastWorkout}
+                        <span className="text-text-sub block">Frequência Semanal:</span>
+                        <span className="font-semibold text-white block">
+                          {selectedStudent.weeklyFrequency
+                            ? `${selectedStudent.weeklyFrequency}x na semana`
+                            : 'Não informado'}
                         </span>
                       </div>
                     </div>
 
                     <div className="flex gap-2 pt-2">
-                      <button 
-                        onClick={() => {
-                          setSelectedChatStudent(selectedStudent);
-                          setActiveTab('chat');
-                        }}
+                      <button
+                        onClick={() => setActiveTab('chat')}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-border-custom hover:border-white/10 bg-black/20 hover:bg-black/40 rounded-xl text-xs font-bold text-white transition-all cursor-pointer"
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
                         Chat
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           setSelectedWorkoutTemplate('ABCDE Standard');
                           setActiveTab('periodization');
