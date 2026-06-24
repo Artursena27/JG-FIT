@@ -708,7 +708,7 @@ export default function AlunoDashboard() {
                   {isUploadingPhoto ? 'Enviando...' : 'Enviar Foto'}
                 </button>
               </div>
-
+              <div className="grid grid-cols-2 gap-3 relative overflow-hidden">
                 <div className="relative aspect-[3/4] bg-slate-900 border border-border-custom rounded-xl overflow-hidden flex flex-col justify-end p-2.5">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03)_0%,transparent_100%)] flex items-center justify-center">
                     <User className="w-16 h-16 text-text-sub opacity-20" />
