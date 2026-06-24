@@ -174,21 +174,24 @@ export default function AlunoDashboard() {
       if (!session) return;
       const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
       const w = schedule.find(x => x.dayOfWeek === ['SEGUNDA', 'TERCA', 'QUARTA', 'QUINTA', 'SEXTA', 'SABADO', 'DOMINGO'][selectedDay])?.workoutId;
-      
+
+      const loadsUsed = activeWorkoutExercises.reduce((acc: Record<string, any>, ex) => {
+        if (ex.currentLoad !== undefined && ex.currentLoad !== null) {
+          acc[ex.id] = ex.currentLoad;
+        }
+        return acc;
+      }, {});
+
       await fetch(`${API_URL}/api/students/me/logs`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}` 
+          Authorization: `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
           workoutId: w,
-          durationSec: timerSec,
-          exercises: activeWorkoutExercises.map(ex => ({
-            exerciseId: ex.id,
-            loadKg: ex.currentLoad,
-            completedSets: ex.sets
-          }))
+          completed: true,
+          loadsUsed
         })
       });
     } catch (err) {
