@@ -63,6 +63,13 @@ export default function PeriodizationBuilder({ studentId }: PeriodizationBuilder
   const [successMsg, setSuccessMsg] = useState('');
   const [search, setSearch] = useState('');
 
+  // Adicionar exercício ao catálogo
+  const [showNewExercise, setShowNewExercise] = useState(false);
+  const [newExName, setNewExName] = useState('');
+  const [newExMuscle, setNewExMuscle] = useState('');
+  const [newExVideo, setNewExVideo] = useState('');
+  const [addingExercise, setAddingExercise] = useState(false);
+
   // Estado do treino (criar OU editar)
   const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null);
   const [workoutName, setWorkoutName] = useState('');
@@ -183,6 +190,36 @@ export default function PeriodizationBuilder({ studentId }: PeriodizationBuilder
     setSuccessMsg('');
     setError('');
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Cria um novo exercício no catálogo (POST /exercises) e recarrega a lista.
+  const createExercise = async () => {
+    if (!newExName.trim()) return setError('Dê um nome ao exercício.');
+    setAddingExercise(true);
+    setError('');
+    setSuccessMsg('');
+    try {
+      const res = await authedFetch('/api/exercises', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newExName.trim(),
+          muscleGroup: newExMuscle.trim() || null,
+          videoUrl: newExVideo.trim() || null,
+        }),
+      });
+      if (!res.ok) throw new Error('Erro ao adicionar exercício ao catálogo.');
+      setSuccessMsg('Exercício adicionado ao catálogo!');
+      setNewExName('');
+      setNewExMuscle('');
+      setNewExVideo('');
+      setShowNewExercise(false);
+      await fetchExercises();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setAddingExercise(false);
+    }
   };
 
   const saveWorkout = async () => {
@@ -407,7 +444,49 @@ export default function PeriodizationBuilder({ studentId }: PeriodizationBuilder
 
         {/* Catálogo */}
         <div className="bg-bg-card border border-border-custom p-5 rounded-2xl shadow-sm space-y-4">
-          <h3 className="font-bold text-sm uppercase text-text-sub">Catálogo</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-sm uppercase text-text-sub">Catálogo</h3>
+            <button
+              onClick={() => setShowNewExercise((v) => !v)}
+              className="flex items-center gap-1 text-[11px] font-bold cursor-pointer"
+              style={{ color: c.primary }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              {showNewExercise ? 'Fechar' : 'Novo exercício'}
+            </button>
+          </div>
+
+          {showNewExercise && (
+            <div className="bg-black/25 border border-border-custom rounded-xl p-3 space-y-2">
+              <input
+                value={newExName}
+                onChange={(e) => setNewExName(e.target.value)}
+                placeholder="Nome do exercício *"
+                className="w-full bg-black/30 border border-border-custom rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-primary"
+              />
+              <input
+                value={newExMuscle}
+                onChange={(e) => setNewExMuscle(e.target.value)}
+                placeholder="Grupo muscular (ex: Peito)"
+                className="w-full bg-black/30 border border-border-custom rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-primary"
+              />
+              <input
+                value={newExVideo}
+                onChange={(e) => setNewExVideo(e.target.value)}
+                placeholder="URL do vídeo (opcional)"
+                className="w-full bg-black/30 border border-border-custom rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-primary"
+              />
+              <button
+                onClick={createExercise}
+                disabled={addingExercise}
+                className="w-full py-2 rounded-lg font-bold text-xs disabled:opacity-50 cursor-pointer"
+                style={{ backgroundColor: c.primary, color: c.accent }}
+              >
+                {addingExercise ? 'Adicionando...' : 'Adicionar ao catálogo'}
+              </button>
+            </div>
+          )}
+
           <div className="relative">
             <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-text-sub" />
             <input
