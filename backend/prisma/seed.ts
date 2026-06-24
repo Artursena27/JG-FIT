@@ -410,6 +410,122 @@ async function main() {
     });
   }
 
+  // --------------------------------------------------------------------------
+  // Enriquecimento extra do seed (painel populado, alunos falsos)
+  // Tudo idempotente: rodar de novo nao duplica.
+  // --------------------------------------------------------------------------
+
+  // 1) Ofensiva/streak do aluno.teste: WorkoutLog completados em ~6 dias
+  //    corridos recentes (hoje, ontem, ... ate 6 dias atras). Guarda: so cria
+  //    se o aluno tiver menos de 5 logs.
+  const streakTester = await prisma.student.findFirst({
+    where: { name: 'aluno.teste' },
+  });
+  if (streakTester) {
+    const existingLogCount = await prisma.workoutLog.count({
+      where: { studentId: streakTester.id },
+    });
+    if (existingLogCount < 5) {
+      const streakWorkout =
+        (await prisma.workout.findFirst({
+          where: { studentId: streakTester.id, label: 'A' },
+        })) ??
+        (await prisma.workout.findFirst({
+          where: { studentId: streakTester.id },
+        }));
+      const streakLogs = [] as Array<{
+        studentId: string;
+        workoutId: string | null;
+        date: Date;
+        completed: boolean;
+        loadsUsed: object;
+        notes: string;
+      }>;
+      for (let n = 0; n < 6; n++) {
+        const date = new Date();
+        date.setDate(date.getDate() - n);
+        streakLogs.push({
+          studentId: streakTester.id,
+          workoutId: streakWorkout?.id ?? null,
+          date,
+          completed: true,
+          loadsUsed: {},
+          notes: 'Treino concluido (ofensiva)',
+        });
+      }
+      await prisma.workoutLog.createMany({ data: streakLogs });
+    }
+  }
+
+  // 2) Notificacoes para o PROFESSOR. Acha o User PROFESSOR (ou pelo
+  //    PROFESSOR_EMAIL). Cria 3 notificacoes so se o professor ainda nao tiver
+  //    nenhuma (contagem por userId), evitando duplicar a cada rodada.
+  const professorUser =
+    (await prisma.user.findFirst({ where: { email: professorEmail } })) ??
+    (await prisma.user.findFirst({ where: { role: Role.PROFESSOR } }));
+  if (professorUser) {
+    const professorNotificationCount = await prisma.notification.count({
+      where: { userId: professorUser.id },
+    });
+    if (professorNotificationCount === 0) {
+      await prisma.notification.createMany({
+        data: [
+          {
+            userId: professorUser.id,
+            type: NotificationType.GERAL,
+            title: 'Bem-vindo ao painel',
+            message: 'Bem-vindo ao painel do JG-FIT. Bons treinos!',
+            isRead: false,
+          },
+          {
+            userId: professorUser.id,
+            type: NotificationType.PAGAMENTO,
+            title: 'Mensalidade vencida',
+            message: 'Rafael esta com a mensalidade vencida.',
+            isRead: false,
+          },
+          {
+            userId: professorUser.id,
+            type: NotificationType.TREINO,
+            title: 'Treino concluido',
+            message: 'aluno.teste concluiu um treino.',
+            isRead: true,
+          },
+        ],
+      });
+    }
+  }
+
+  // 3) Assinaturas extras para variedade. Upsert por studentId (unique).
+  //    So faz upsert se o aluno existir. Rafael ja e OVERDUE — nao mexe.
+  const extraSubscriptions: Array<{
+    name: string;
+    status: SubscriptionStatus;
+    planName: string;
+    dueInDays: number;
+  }> = [
+    { name: 'Carla', status: SubscriptionStatus.ACTIVE, planName: 'Trimestral', dueInDays: 60 },
+    { name: 'Ana', status: SubscriptionStatus.ACTIVE, planName: 'Mensal', dueInDays: 15 },
+  ];
+  for (const sub of extraSubscriptions) {
+    const subStudent = await prisma.student.findFirst({
+      where: { name: sub.name },
+    });
+    if (!subStudent) continue;
+    const subDueDate = new Date();
+    subDueDate.setDate(subDueDate.getDate() + sub.dueInDays);
+    await prisma.subscription.upsert({
+      where: { studentId: subStudent.id },
+      update: {},
+      create: {
+        studentId: subStudent.id,
+        status: sub.status,
+        planName: sub.planName,
+        dueDate: subDueDate,
+      },
+    });
+  }
+
   const totalStudents = await prisma.student.count();
   const totalExercises = await prisma.exercise.count();
   console.log(
