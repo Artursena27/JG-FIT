@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { supabase, API_URL } from '@/lib/supabaseClient';
 import { useBrand } from '@/context/BrandContext';
 import PeriodizationBuilder from '@/components/PeriodizationBuilder';
@@ -162,7 +163,6 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
   const [subPlan, setSubPlan] = useState('');
   const [subDue, setSubDue] = useState('');
   const [savingSub, setSavingSub] = useState(false);
-  const [subMsg, setSubMsg] = useState('');
 
   const authedFetch = useCallback(async (path: string, options: RequestInit = {}) => {
     const {
@@ -219,7 +219,6 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
 
   const saveSubscription = async () => {
     setSavingSub(true);
-    setSubMsg('');
     try {
       const res = await authedFetch(`/api/students/${student.id}/subscription`, {
         method: 'PUT',
@@ -231,10 +230,10 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
         }),
       });
       if (!res.ok) throw new Error();
-      setSubMsg('Mensalidade atualizada!');
+      toast.success('Mensalidade atualizada!');
       await loadSubscription();
     } catch {
-      setSubMsg('Erro ao salvar.');
+      toast.error('Erro ao salvar a mensalidade.');
     } finally {
       setSavingSub(false);
     }
@@ -367,7 +366,6 @@ export default function StudentDetail({ student, onBack, onChat }: StudentDetail
               <Save className="w-3.5 h-3.5" />
               Salvar
             </button>
-            {subMsg && <span className="text-[10px] text-text-sub">{subMsg}</span>}
           </div>
         </div>
 

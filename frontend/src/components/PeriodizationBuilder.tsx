@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase, API_URL } from '@/lib/supabaseClient';
 import { useBrand } from '@/context/BrandContext';
 import { Search, Plus, Trash2, Pencil, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ApiExercise {
   id: string;
@@ -61,8 +62,6 @@ export default function PeriodizationBuilder({ studentId, reloadKey }: Periodiza
 
   const [exercises, setExercises] = useState<ApiExercise[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
   const [search, setSearch] = useState('');
 
   // Adicionar exercício ao catálogo
@@ -170,7 +169,6 @@ export default function PeriodizationBuilder({ studentId, reloadKey }: Periodiza
     setWorkoutName('');
     setWorkoutLabel('A');
     setSelectedExercises([]);
-    setError('');
   };
 
   // Carrega uma ficha existente para edição
@@ -190,17 +188,13 @@ export default function PeriodizationBuilder({ studentId, reloadKey }: Periodiza
         notes: ex.notes ?? undefined,
       })),
     );
-    setSuccessMsg('');
-    setError('');
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Cria um novo exercício no catálogo (POST /exercises) e recarrega a lista.
   const createExercise = async () => {
-    if (!newExName.trim()) return setError('Dê um nome ao exercício.');
+    if (!newExName.trim()) return toast.error('Dê um nome ao exercício.');
     setAddingExercise(true);
-    setError('');
-    setSuccessMsg('');
     try {
       const res = await authedFetch('/api/exercises', {
         method: 'POST',
@@ -212,27 +206,25 @@ export default function PeriodizationBuilder({ studentId, reloadKey }: Periodiza
         }),
       });
       if (!res.ok) throw new Error('Erro ao adicionar exercício ao catálogo.');
-      setSuccessMsg('Exercício adicionado ao catálogo!');
+      toast.success('Exercício adicionado ao catálogo!');
       setNewExName('');
       setNewExMuscle('');
       setNewExVideo('');
       setShowNewExercise(false);
       await fetchExercises();
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setAddingExercise(false);
     }
   };
 
   const saveWorkout = async () => {
-    if (!studentId) return setError('Selecione um aluno primeiro.');
-    if (!workoutName) return setError('Dê um nome ao treino.');
-    if (selectedExercises.length === 0) return setError('Adicione exercícios ao treino.');
+    if (!studentId) return toast.error('Selecione um aluno primeiro.');
+    if (!workoutName) return toast.error('Dê um nome ao treino.');
+    if (selectedExercises.length === 0) return toast.error('Adicione exercícios ao treino.');
 
     setLoading(true);
-    setError('');
-    setSuccessMsg('');
     try {
       const payload = {
         name: workoutName,
@@ -257,35 +249,31 @@ export default function PeriodizationBuilder({ studentId, reloadKey }: Periodiza
       });
 
       if (!res.ok) throw new Error('Erro ao salvar treino');
-      setSuccessMsg(editing ? 'Treino atualizado com sucesso!' : 'Treino criado com sucesso!');
+      toast.success(editing ? 'Treino atualizado com sucesso!' : 'Treino criado com sucesso!');
       resetForm();
       await fetchWorkouts();
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   const deleteWorkout = async (id: string) => {
-    setError('');
-    setSuccessMsg('');
     try {
       const res = await authedFetch(`/api/workouts/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Erro ao excluir treino (pode estar em uso na agenda).');
       if (editingWorkoutId === id) resetForm();
-      setSuccessMsg('Treino excluído.');
+      toast.success('Treino excluído.');
       await fetchWorkouts();
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message);
     }
   };
 
   const saveSchedule = async () => {
-    if (!studentId) return setError('Selecione um aluno primeiro.');
+    if (!studentId) return toast.error('Selecione um aluno primeiro.');
     setLoading(true);
-    setError('');
-    setSuccessMsg('');
     try {
       const payload = {
         items: DAYS.map((day) => ({
@@ -301,9 +289,9 @@ export default function PeriodizationBuilder({ studentId, reloadKey }: Periodiza
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Erro ao salvar agenda');
-      setSuccessMsg('Agenda atualizada com sucesso!');
+      toast.success('Agenda atualizada com sucesso!');
     } catch (err: any) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -325,9 +313,6 @@ export default function PeriodizationBuilder({ studentId, reloadKey }: Periodiza
 
   return (
     <div className="space-y-6">
-      {error && <div className="p-3 bg-red-500/10 text-red-400 rounded-xl text-xs">{error}</div>}
-      {successMsg && <div className="p-3 bg-green-500/10 text-green-400 rounded-xl text-xs">{successMsg}</div>}
-
       {/* Fichas já prescritas (editar / excluir) */}
       {studentWorkouts.length > 0 && (
         <div className="bg-bg-card border border-border-custom p-5 rounded-2xl shadow-sm space-y-3">

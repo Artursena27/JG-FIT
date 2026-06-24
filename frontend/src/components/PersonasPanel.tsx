@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase, API_URL } from '@/lib/supabaseClient';
 import { useBrand } from '@/context/BrandContext';
 import { Cpu, AlertCircle, Sparkles, Star, ChevronDown, Copy, Dumbbell } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface PersonaMatch {
   id: string;
@@ -83,7 +84,6 @@ export default function PersonasPanel({ studentId, onWorkoutCopied }: PersonasPa
   const [matchWorkouts, setMatchWorkouts] = useState<MatchWorkout[]>([]);
   const [loadingMatch, setLoadingMatch] = useState(false);
   const [copyingId, setCopyingId] = useState<string | null>(null);
-  const [copyMsg, setCopyMsg] = useState('');
 
   const authedFetch = useCallback(async (path: string, options: RequestInit = {}) => {
     const {
@@ -123,7 +123,6 @@ export default function PersonasPanel({ studentId, onWorkoutCopied }: PersonasPa
   }, [studentId, authedFetch]);
 
   const toggleMatch = async (matchId: string) => {
-    setCopyMsg('');
     if (expandedId === matchId) {
       setExpandedId(null);
       return;
@@ -149,7 +148,6 @@ export default function PersonasPanel({ studentId, onWorkoutCopied }: PersonasPa
   const copyWorkout = async (w: MatchWorkout) => {
     if (!studentId) return;
     setCopyingId(w.id);
-    setCopyMsg('');
     try {
       const payload = {
         name: w.name,
@@ -171,10 +169,10 @@ export default function PersonasPanel({ studentId, onWorkoutCopied }: PersonasPa
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error();
-      setCopyMsg(`Treino "${w.name}" copiado para o aluno!`);
+      toast.success(`Treino "${w.name}" copiado para o aluno!`);
       onWorkoutCopied?.();
     } catch {
-      setCopyMsg('Erro ao copiar o treino.');
+      toast.error('Erro ao copiar o treino.');
     } finally {
       setCopyingId(null);
     }
@@ -202,10 +200,6 @@ export default function PersonasPanel({ studentId, onWorkoutCopied }: PersonasPa
           </span>
         </div>
       </div>
-
-      {copyMsg && (
-        <div className="text-xs p-2.5 rounded-xl bg-green-500/10 text-green-400 border border-green-500/20">{copyMsg}</div>
-      )}
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-6 text-text-sub gap-2">

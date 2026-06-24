@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useBrand } from '@/context/BrandContext';
 import Logo from '@/components/Logo';
 import { supabase } from '@/lib/supabaseClient';
+import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
+import Skeleton, { SkeletonCard, SkeletonRow } from '@/components/Skeleton';
 import { 
   Dumbbell, 
   TrendingUp, 
@@ -104,13 +107,20 @@ export default function AlunoDashboard() {
       const formData = new FormData();
       formData.append('file', file);
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/students/me/photos`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/students/me/photos`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}` },
         body: formData
       });
+
+      if (res.ok) {
+        toast.success('Foto enviada!');
+      } else {
+        toast.error('Não foi possível enviar a foto.');
+      }
     } catch (err) {
       console.error('Failed to upload', err);
+      toast.error('Não foi possível enviar a foto.');
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -182,7 +192,7 @@ export default function AlunoDashboard() {
         return acc;
       }, {});
 
-      await fetch(`${API_URL}/api/students/me/logs`, {
+      const res = await fetch(`${API_URL}/api/students/me/logs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -194,6 +204,28 @@ export default function AlunoDashboard() {
           loadsUsed
         })
       });
+
+      if (res.ok) {
+        confetti({ particleCount: 140, spread: 75, origin: { y: 0.7 } });
+
+        // Tenta enriquecer o toast com a ofensiva atual; nunca quebra o fluxo.
+        let description: string | undefined;
+        try {
+          const resGam = await fetch(`${API_URL}/api/students/me/gamification`, {
+            headers: { Authorization: `Bearer ${session.access_token}` }
+          });
+          if (resGam.ok) {
+            const g = await resGam.json();
+            if (g && typeof g.currentStreak !== 'undefined') {
+              description = `Ofensiva: ${g.currentStreak} dias`;
+            }
+          }
+        } catch (gamErr) {
+          console.error('Failed to fetch gamification', gamErr);
+        }
+
+        toast.success('Treino concluído! 🔥', description ? { description } : undefined);
+      }
     } catch (err) {
       console.error('Failed to log workout', err);
     }
@@ -327,16 +359,45 @@ export default function AlunoDashboard() {
     }
   }, [selectedDay, schedule, workouts]);
 
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-bg-main text-text-main pb-20 select-none">
+        {/* Header skeleton */}
+        <header className="sticky top-0 bg-bg-card/85 backdrop-blur-md border-b border-border-custom px-5 py-4 flex items-center justify-between z-40">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-9 h-9 rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-3.5 w-32" />
+              <Skeleton className="h-2.5 w-20" />
+            </div>
+          </div>
+          <Skeleton className="w-9 h-9 rounded-lg" />
+        </header>
+
+        {/* Content skeleton */}
+        <main className="flex-1 max-w-lg mx-auto w-full px-4 pt-5 space-y-5">
+          <SkeletonCard className="h-36" />
+          <div className="grid grid-cols-7 gap-1.5">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 rounded-xl" />
+            ))}
+          </div>
+          <SkeletonCard className="h-24" />
+          <div className="grid grid-cols-2 gap-4">
+            <SkeletonCard className="h-32" />
+            <SkeletonCard className="h-32" />
+          </div>
+          <div className="bg-bg-card border border-border-custom rounded-2xl divide-y divide-border-custom">
+            <SkeletonRow />
+            <SkeletonRow />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-bg-main text-text-main pb-20 select-none">
-      {loading && (
-        <div className="fixed inset-0 bg-bg-main z-50 flex items-center justify-center">
-          <div className="flex flex-col items-center animate-pulse">
-            <div className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin mb-4" style={{ borderColor: brand.colors.primary, borderTopColor: 'transparent' }}></div>
-            <p className="text-sm font-semibold">Carregando dados...</p>
-          </div>
-        </div>
-      )}
       {/* Real Watermark Logo */}
       <div className="absolute inset-0 flex items-center justify-center opacity-[0.015] select-none pointer-events-none z-0">
         <img src="/logo.jpg" alt="Logo Watermark" className="w-[50vmin] h-[50vmin] object-contain" />

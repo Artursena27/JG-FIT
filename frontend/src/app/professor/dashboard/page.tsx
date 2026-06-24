@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { useBrand } from '@/context/BrandContext';
 import { supabase, API_URL } from '@/lib/supabaseClient';
 import StudentDetail from '@/components/StudentDetail';
 import NotificationsBell from '@/components/NotificationsBell';
+import Skeleton, { SkeletonRow } from '@/components/Skeleton';
 
 import {
   Users,
@@ -225,8 +227,9 @@ export default function ProfessorDashboard() {
       const res = await authedFetch(`/api/professor/students/${id}/${action}`, { method: 'POST' });
       if (!res.ok) throw new Error('request failed');
       await Promise.all([loadStudents(), loadDashboard()]);
+      toast.success(action === 'approve' ? 'Aluno aprovado!' : 'Aluno rejeitado.');
     } catch {
-      setStudentsError('Não foi possível concluir a ação. Tente novamente.');
+      toast.error('Não foi possível concluir a ação.');
     } finally {
       setActingId(null);
     }
@@ -329,7 +332,11 @@ export default function ProfessorDashboard() {
               <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-sm">
                 <span className="text-xs text-text-sub uppercase font-bold tracking-wider">Alunos Ativos</span>
                 <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-black">{dash ? dash.activeStudents : '—'}</span>
+                  {loadingDash ? (
+                    <Skeleton className="h-7 w-16" />
+                  ) : (
+                    <span className="text-3xl font-black">{dash ? dash.activeStudents : '—'}</span>
+                  )}
                   {!!dash?.pendingStudents && (
                     <button onClick={() => setActiveTab('students')} className="text-[10px] text-amber-400 font-bold cursor-pointer hover:underline">
                       {dash.pendingStudents} na fila
@@ -341,7 +348,11 @@ export default function ProfessorDashboard() {
               <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-sm">
                 <span className="text-xs text-text-sub uppercase font-bold tracking-wider">Assiduidade (30d)</span>
                 <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-black">{dash?.adherencePct != null ? `${dash.adherencePct}%` : '—'}</span>
+                  {loadingDash ? (
+                    <Skeleton className="h-7 w-16" />
+                  ) : (
+                    <span className="text-3xl font-black">{dash?.adherencePct != null ? `${dash.adherencePct}%` : '—'}</span>
+                  )}
                   <span className="text-[10px] font-bold" style={{ color: c.primary }}>dos treinos</span>
                 </div>
               </div>
@@ -349,7 +360,11 @@ export default function ProfessorDashboard() {
               <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-sm">
                 <span className="text-xs text-text-sub uppercase font-bold tracking-wider">Inadimplentes</span>
                 <div className="flex items-baseline gap-2 mt-2">
-                  <span className={`text-3xl font-black ${overdue.length ? 'text-red-400' : ''}`}>{overdue.length}</span>
+                  {loadingDash ? (
+                    <Skeleton className="h-7 w-16" />
+                  ) : (
+                    <span className={`text-3xl font-black ${overdue.length ? 'text-red-400' : ''}`}>{overdue.length}</span>
+                  )}
                   <span className="text-[10px] text-text-sub">mensalidades</span>
                 </div>
               </div>
@@ -357,7 +372,11 @@ export default function ProfessorDashboard() {
               <div className="bg-bg-card border border-border-custom rounded-2xl p-5 shadow-sm">
                 <span className="text-xs text-text-sub uppercase font-bold tracking-wider">Fichas criadas</span>
                 <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-3xl font-black">{dash ? dash.workoutsCount : '—'}</span>
+                  {loadingDash ? (
+                    <Skeleton className="h-7 w-16" />
+                  ) : (
+                    <span className="text-3xl font-black">{dash ? dash.workoutsCount : '—'}</span>
+                  )}
                   <span className="text-[10px] text-text-sub">treinos</span>
                 </div>
               </div>
@@ -542,10 +561,12 @@ export default function ProfessorDashboard() {
               </div>
               <div className="divide-y divide-border-custom">
                 {loadingStudents ? (
-                  <div className="p-8 flex items-center justify-center gap-2 text-text-sub text-xs">
-                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    Carregando alunos...
-                  </div>
+                  <>
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                  </>
                 ) : (
                   filteredActive.map((student) => (
                     <div

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Montserrat, Lexend_Deca, Parisienne, Poppins, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { BrandProvider } from "@/context/BrandContext";
+import { Toaster } from "sonner";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -57,6 +58,18 @@ export default function RootLayout({
         <BrandProvider>
           {children}
         </BrandProvider>
+        <Toaster
+          theme="dark"
+          position="top-center"
+          richColors
+          toastOptions={{
+            style: {
+              background: "#0c111e",
+              border: "1px solid #182235",
+              color: "#fff",
+            },
+          }}
+        />
       </body>
     </html>
   );
